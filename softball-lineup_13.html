@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slow Pitch Softball Lineup</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --grass:#2d6a2d;--grass-light:#3a8c3a;--chalk:#f5f0e8;--ink:#1a1a2e;
+  --red:#cc2200;--gold:#e8b84b;--panel:#1e2a1e;--card:#f9f5ee;--border:#c4b89a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);min-height:100vh;padding:16px;
+  background-image:radial-gradient(ellipse at 20% 80%,rgba(40,80,40,.3) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 20%,rgba(200,133,74,.15) 0%,transparent 50%)}
+h1{font-family:'Bebas Neue',sans-serif;color:var(--gold);text-align:center;font-size:2.6rem;
+  letter-spacing:4px;text-shadow:2px 2px 0 rgba(0,0,0,.5);margin-bottom:4px}
+.subtitle{text-align:center;color:rgba(245,240,232,.45);font-size:.7rem;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:14px}
+
+/* ── TOP BAR ── */
+.top-bar{max-width:1160px;margin:0 auto 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top-bar label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--gold);font-size:1rem}
+.preset-select{background:#0d1a0d;color:var(--chalk);border:1px solid rgba(255,255,255,.2);
+  border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer}
+.btn{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:.85rem;padding:5px 14px;
+  border:none;border-radius:6px;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.15)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-red{background:var(--red);color:#fff}
+.btn-dark{background:#2a3a2a;color:var(--chalk);border:1px solid rgba(255,255,255,.15)}
+.btn-sm{font-size:.75rem;padding:3px 10px}
+.btn-xs{font-size:.7rem;padding:2px 7px}
+
+/* ── INNING BAR ── */
+.inning-bar{max-width:1160px;margin:0 auto 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inning-bar label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--chalk);font-size:.9rem}
+.inn-tab{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;font-size:.8rem;padding:4px 12px;
+  border-radius:5px;border:1px solid rgba(255,255,255,.2);background:#0d1a0d;color:rgba(255,255,255,.55);
+  cursor:pointer;transition:all .15s}
+.inn-tab.active{background:var(--grass-light);color:#fff;border-color:var(--grass-light)}
+.inn-tab-add{background:transparent;border:1px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.35);
+  cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:4px 10px;border-radius:5px}
+.inn-tab-add:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── LAYOUT ── */
+.main-layout{display:grid;grid-template-columns:1fr 1.15fr;gap:14px;max-width:1160px;margin:0 auto}
+
+/* ── PANELS ── */
+.panel{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;color:var(--ink);
+  border-bottom:3px solid var(--red);padding-bottom:5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.panel-title span{flex:1}
+.field-panel{background:var(--panel);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;gap:10px}
+.field-panel .panel-title{color:var(--chalk);border-color:var(--grass-light)}
+
+/* ── BATTING SLOTS ── */
+.batting-slot{display:flex;align-items:center;gap:8px;padding:4px 2px;
+  border-bottom:1px dashed rgba(0,0,0,.12);min-height:40px}
+.batting-slot:last-child{border-bottom:none}
+.order-num{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--red);
+  width:24px;text-align:center;flex-shrink:0;line-height:1}
+.slot-drop{flex:1;min-height:32px;border:2px dashed transparent;border-radius:6px;
+  display:flex;align-items:center;transition:border-color .15s,background .15s}
+.slot-drop.drag-over{border-color:var(--red);background:rgba(204,34,0,.07)}
+
+/* ── PLAYER CHIPS ── */
+.player-chip{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--chalk);
+  padding:5px 8px 5px 6px;border-radius:6px;user-select:none;font-size:.82rem;font-weight:600;
+  letter-spacing:.4px;transition:opacity .2s;width:100%;border:1px solid rgba(255,255,255,.08)}
+.player-chip.draggable{cursor:grab}
+.player-chip.draggable:active{cursor:grabbing}
+.player-chip.dragging{opacity:.3}
+.drag-handle{display:none}
+.chip-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* badges */
+.bench-badge{font-size:.58rem;background:var(--gold);color:var(--ink);padding:1px 5px;
+  border-radius:3px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
+.sub-badge{font-size:.58rem;background:#1a3a3a;color:#aef;padding:1px 5px;
+  border-radius:3px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
+
+/* chip action buttons */
+.chip-btn{background:none;border:none;cursor:pointer;font-size:.85rem;line-height:1;
+  padding:0 2px;flex-shrink:0;font-weight:700;transition:color .1s}
+.chip-btn-out{color:rgba(255,80,80,.6)}
+.chip-btn-out:hover{color:#ff5555}
+.chip-btn-restore{color:rgba(255,80,80,.7)}
+.chip-btn-restore:hover{color:#ff4444}
+.chip-btn-edit{color:rgba(255,255,255,.35)}
+.chip-btn-edit:hover{color:var(--gold)}
+.chip-btn-remove{color:rgba(255,80,80,.5)}
+.chip-btn-remove:hover{color:#ff4444}
+
+/* inline name edit */
+.name-edit-input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+  border-radius:4px;outline:none;color:var(--chalk);font:inherit;font-weight:600;
+  padding:1px 4px;width:100%;min-width:50px}
+
+/* is-out chip */
+.player-chip.is-out{background:#2a0a0a;border-color:rgba(200,50,50,.3);opacity:.8}
+
+/* ── FIELD ── */
+.field-row{display:flex;gap:10px;align-items:flex-start}
+.field-svg-wrap{flex:1;position:relative}
+.field-bg{width:100%;aspect-ratio:1/.82;border-radius:8px;position:relative;
+  background:radial-gradient(ellipse 90% 100% at 50% 100%,#2a5f1e 0%,#1e4a14 40%,#163d10 100%)}
+.dirt-overlay{position:absolute;bottom:11%;left:50%;transform:translateX(-50%);
+  width:54%;aspect-ratio:1;background:radial-gradient(ellipse,#b5763a 0%,#9a612e 100%);
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
+.field-bg::before,.field-bg::after{content:'';position:absolute;bottom:7%;width:2px;height:58%;
+  background:rgba(255,255,255,.22);transform-origin:bottom center}
+.field-bg::before{left:50%;transform:translateX(-50%) rotate(-45deg)}
+.field-bg::after{left:50%;transform:translateX(-50%) rotate(45deg)}
+
+.pos-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px}
+.pos-label{font-family:'Bebas Neue',sans-serif;font-size:.6rem;letter-spacing:1.5px;
+  color:rgba(255,255,255,.5);background:rgba(0,0,0,.45);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.pos-drop{min-width:84px;min-height:30px;border:2px dashed rgba(255,255,255,.18);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s}
+.pos-drop.drag-over{border-color:var(--gold);background:rgba(232,184,75,.15)}
+.pos-drop .player-chip{font-size:.74rem;padding:3px 6px 3px 5px;background:rgba(10,20,10,.88)}
+.pos-drop .player-chip .chip-btn{display:none}
+
+#slot-LF  {left:17%;top:22%} #slot-LCF{left:34%;top:11%}
+#slot-RCF {left:66%;top:11%} #slot-RF {left:83%;top:22%}
+#slot-SS  {left:34%;top:43%} #slot-2B {left:63%;top:43%}
+#slot-3B  {left:19%;top:55%} #slot-1B {left:81%;top:55%}
+#slot-P   {left:50%;top:55%} #slot-C  {left:50%;top:82%}
+
+/* ── BENCH COL ── */
+.bench-col{width:108px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.bench-col-title{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:2px;
+  color:var(--gold);text-align:center}
+.bench-drop{min-height:34px;border:2px dashed rgba(232,184,75,.35);border-radius:6px;
+  background:rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:stretch;gap:4px;
+  padding:4px;transition:border-color .15s,background .15s}
+.bench-drop.drag-over{border-color:var(--gold);background:rgba(232,184,75,.15)}
+.bench-drop .player-chip{font-size:.74rem;padding:3px 6px 3px 5px;background:rgba(40,20,0,.9)}
+.bench-empty-slot{min-height:28px;border:1px dashed rgba(232,184,75,.2);border-radius:5px;
+  background:transparent;transition:border-color .15s,background .15s}
+.bench-empty-slot.drag-over{border-color:var(--gold);background:rgba(232,184,75,.12)}
+
+/* ── NOTES ── */
+.notes-area{display:flex;flex-direction:column;gap:4px}
+.notes-area label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:.85rem;color:rgba(255,255,255,.55)}
+.notes-textarea{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);border-radius:6px;
+  color:var(--chalk);font-family:'DM Sans',sans-serif;font-size:.82rem;padding:8px 10px;
+  resize:vertical;min-height:70px;line-height:1.5;outline:none;transition:border-color .15s}
+.notes-textarea:focus{border-color:rgba(255,255,255,.35)}
+.notes-textarea::placeholder{color:rgba(255,255,255,.2)}
+
+/* ── BOTTOM ROW ── */
+.bottom-row{max-width:1160px;margin:12px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.subs-pool,.out-pool{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;padding:7px;border-radius:8px;transition:border-color .15s,background .15s}
+.subs-pool{border:2px dashed var(--border)}
+.out-pool{border:2px dashed rgba(200,50,50,.4);background:rgba(40,0,0,.1)}
+.subs-pool.drag-over,.out-pool.drag-over{border-color:var(--gold);background:rgba(232,184,75,.07)}
+.subs-pool .player-chip{width:auto;background:#1a2a1a;border-color:rgba(100,200,100,.2);cursor:pointer}
+.subs-pool .player-chip:hover{background:#243a24;border-color:rgba(100,220,100,.5)}
+.out-pool .player-chip{width:auto;background:#2a0a0a;border-color:rgba(200,50,50,.25)}
+.empty-msg{color:rgba(0,0,0,.3);font-size:.75rem;font-style:italic;padding:2px 4px;align-self:center}
+.out-empty{color:rgba(255,100,100,.2);font-size:.75rem;font-style:italic;padding:2px 4px;align-self:center}
+.pool-add-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pool-add-input{flex:1;background:#f0ece3;border:1px solid var(--border);border-radius:6px;
+  padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;color:var(--ink)}
+.pool-add-input:focus{border-color:#888}
+
+.hint{text-align:center;color:rgba(245,240,232,.22);font-size:.67rem;letter-spacing:1.5px;text-transform:uppercase;margin-top:10px;padding-bottom:20px}
+
+/* ── GHOST ── */
+.ghost-chip{position:fixed;pointer-events:none;z-index:9999;opacity:.85;transform:rotate(3deg) scale(1.05);min-width:120px}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal-bg.hidden{display:none}
+.modal{background:#1a2a1a;border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:24px;min-width:300px;max-width:440px;width:90%}
+.modal h2{font-family:'Bebas Neue',sans-serif;color:var(--gold);letter-spacing:3px;font-size:1.4rem;margin-bottom:14px}
+.modal label{display:block;color:var(--chalk);font-size:.8rem;margin-bottom:4px;margin-top:10px}
+.modal input{width:100%;background:#0d1a0d;border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:var(--chalk);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.preset-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.preset-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:6px;border:1px solid rgba(255,255,255,.08)}
+.preset-item-name{flex:1;color:var(--chalk);font-size:.85rem;font-weight:600}
+.preset-item-info{color:rgba(255,255,255,.4);font-size:.72rem}
+
+/* ── ROSTER EDITOR MODAL ── */
+.roster-list{display:flex;flex-direction:column;gap:5px;max-height:320px;overflow-y:auto;margin-bottom:12px}
+.roster-row{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.25);border-radius:6px;padding:5px 8px}
+.roster-row input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+  border-radius:4px;color:var(--chalk);padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none}
+.roster-row input:focus{border-color:rgba(255,255,255,.5)}
+.roster-num{font-family:'Bebas Neue',sans-serif;color:var(--red);font-size:1.1rem;width:22px;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>Softball Lineup</h1>
+<p class="subtitle">Slow Pitch · Drag handles to move · Pencil to rename · ✕ to mark out</p>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <label>PRESET:</label>
+  <select class="preset-select" id="preset-select"><option value="">— None —</option></select>
+  <button class="btn btn-gold btn-sm" id="btn-save-preset">Save Preset</button>
+  <button class="btn btn-dark btn-sm" id="btn-update-preset" style="display:none">Update Preset</button>
+  <button class="btn btn-dark btn-sm" id="btn-manage-presets">Manage</button>
+  <button class="btn btn-dark btn-sm" id="btn-edit-roster">Edit Roster</button>
+  <button class="btn btn-dark btn-sm" id="btn-clear-field">Clear Field</button>
+</div>
+
+<!-- Inning tabs -->
+<div class="inning-bar">
+  <label>INNING:</label>
+  <div id="inning-tabs"></div>
+  <button class="inn-tab-add" id="btn-add-inning">+ Inning</button>
+</div>
+
+<div class="main-layout">
+  <!-- Batting Order -->
+  <div class="panel">
+    <div class="panel-title"><span>Batting Order</span></div>
+    <div id="batting-order"></div>
+  </div>
+
+  <!-- Field + Bench -->
+  <div class="field-panel">
+    <div class="panel-title"><span>Field Positions</span></div>
+    <div class="field-row">
+      <div class="field-svg-wrap">
+        <div class="field-bg">
+          <div class="dirt-overlay"></div>
+          <div class="pos-slot" id="slot-LF"><span class="pos-label">LF</span><div class="pos-drop" data-pos="LF"></div></div>
+          <div class="pos-slot" id="slot-LCF"><span class="pos-label">LC</span><div class="pos-drop" data-pos="LCF"></div></div>
+          <div class="pos-slot" id="slot-RCF"><span class="pos-label">RC</span><div class="pos-drop" data-pos="RCF"></div></div>
+          <div class="pos-slot" id="slot-RF"><span class="pos-label">RF</span><div class="pos-drop" data-pos="RF"></div></div>
+          <div class="pos-slot" id="slot-SS"><span class="pos-label">SS</span><div class="pos-drop" data-pos="SS"></div></div>
+          <div class="pos-slot" id="slot-2B"><span class="pos-label">2B</span><div class="pos-drop" data-pos="2B"></div></div>
+          <div class="pos-slot" id="slot-3B"><span class="pos-label">3B</span><div class="pos-drop" data-pos="3B"></div></div>
+          <div class="pos-slot" id="slot-1B"><span class="pos-label">1B</span><div class="pos-drop" data-pos="1B"></div></div>
+          <div class="pos-slot" id="slot-P"><span class="pos-label">P</span><div class="pos-drop" data-pos="P"></div></div>
+          <div class="pos-slot" id="slot-C"><span class="pos-label">C</span><div class="pos-drop" data-pos="C"></div></div>
+        </div>
+      </div>
+      <div class="bench-col">
+        <div class="bench-col-title">BENCH</div>
+        <div class="bench-drop" id="bench-drop" data-type="bench"></div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-area">
+      <label>NOTES</label>
+      <textarea class="notes-textarea" id="notes-field" placeholder="Lineup notes, reminders, game info…"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom row -->
+<div class="bottom-row">
+  <div class="panel">
+    <div class="panel-title" style="border-color:#3a8c3a"><span>Subs / Available</span></div>
+    <div class="subs-pool" id="subs-pool" data-type="subs"></div>
+    <div class="pool-add-row">
+      <input class="pool-add-input" id="sub-add-input" placeholder="Add sub name…" />
+      <button class="btn btn-dark btn-sm" id="btn-add-sub">Add</button>
+    </div>
+  </div>
+  <div class="panel" style="background:#1a0a0a;border-color:rgba(200,50,50,.3)">
+    <div class="panel-title" style="color:#cc4444;border-color:#7a1a1a"><span>Out This Week</span></div>
+    <div class="out-pool" id="out-pool" data-type="out"></div>
+  </div>
+</div>
+
+<p class="hint">Drag ⠿ handle to move players · ✎ to rename · ✕ to mark out or restore · Field positions swap when both are filled</p>
+
+<!-- Save Preset Modal -->
+<div class="modal-bg hidden" id="modal-save">
+  <div class="modal">
+    <h2>Save Preset</h2>
+    <label>Preset Name</label>
+    <input type="text" id="preset-name-input" placeholder="e.g. Default, Tournament…">
+    <div class="modal-btns">
+      <button class="btn btn-dark" id="modal-save-cancel">Cancel</button>
+      <button class="btn btn-gold" id="modal-save-confirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Presets Modal -->
+<div class="modal-bg hidden" id="modal-manage">
+  <div class="modal">
+    <h2>Manage Presets</h2>
+    <div class="preset-list" id="preset-list"></div>
+    <div class="modal-btns"><button class="btn btn-dark" id="modal-manage-close">Close</button></div>
+  </div>
+</div>
+
+<!-- Edit Roster Modal -->
+<div class="modal-bg hidden" id="modal-roster">
+  <div class="modal" style="max-width:380px">
+    <h2 id="modal-roster-title">Edit Roster</h2>
+    <div class="roster-list" id="roster-list"></div>
+    <div class="modal-btns"><button class="btn btn-gold" id="modal-roster-close">Done</button></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const POSITIONS = ['P','C','1B','2B','3B','SS','LF','LCF','RCF','RF'];
+const DEFAULT_NAMES = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8','Player 9','Player 10','Player 11'];
+
+let players = DEFAULT_NAMES.map((name,i)=>({id:'p'+i, name, isSub:false}));
+let battingOrder = players.map(p=>p.id); // always all 11 (minus out)
+let innings = [{
+  label:'Inn 1',
+  fieldSlots: Object.fromEntries(POSITIONS.map((pos,i)=>[pos, players[i]?.id||null])),
+  bench: [players[10]?.id||null].filter(Boolean)
+}];
+let currentInning = 0;
+let subsPool = []; // sub player ids
+let outPool  = []; // player ids marked out this week
+let presets  = JSON.parse(localStorage.getItem('slp_presets')||'[]');
+let pidCounter = players.length;
+
+function newId(){ return 'p'+(pidCounter++) }
+function getPlayer(id){ return players.find(p=>p.id===id)||null }
+
+// ══════════════════════════════════════════════════════════
+// DRAG
+// ══════════════════════════════════════════════════════════
+let dragging = null; // {playerId, sourceType, sourceKey}
+let ghostEl  = null;
+let mX=0,mY=0;
+
+document.addEventListener('mousemove',e=>{
+  mX=e.clientX; mY=e.clientY;
+  if(ghostEl){ ghostEl.style.left=(mX+14)+'px'; ghostEl.style.top=(mY-14)+'px'; }
+});
+document.addEventListener('mouseup',()=>{
+  if(ghostEl){ghostEl.remove();ghostEl=null;}
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  dragging=null;
+});
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function render(){
+  renderInningTabs();
+  renderBatting();
+  renderField();
+  renderBench();
+  renderSubs();
+  renderOut();
+  renderPresetSelect();
+}
+
+function renderInningTabs(){
+  const wrap=document.getElementById('inning-tabs');
+  wrap.innerHTML='';
+  innings.forEach((inn,i)=>{
+    const tab=document.createElement('button');
+    tab.className='inn-tab'+(i===currentInning?' active':'');
+    tab.textContent=inn.label;
+    tab.addEventListener('click',()=>{currentInning=i;render();});
+    wrap.appendChild(tab);
+  });
+}
+
+function renderBatting(){
+  const container=document.getElementById('batting-order');
+  container.innerHTML='';
+  const active=battingOrder.filter(id=>!outPool.includes(id));
+  active.forEach((pid,idx)=>{
+    const p=getPlayer(pid); if(!p)return;
+    const row=document.createElement('div');
+    row.className='batting-slot';
+    const num=document.createElement('div');
+    num.className='order-num'; num.textContent=idx+1;
+    const drop=document.createElement('div');
+    drop.className='slot-drop';
+    drop.dataset.type='batting';
+    drop.dataset.index=String(idx);
+    drop.appendChild(makeChip(p,'batting',idx,true,false));
+    setupDrop(drop);
+    row.appendChild(num); row.appendChild(drop);
+    container.appendChild(row);
+  });
+}
+
+function renderField(){
+  const inn=innings[currentInning];
+  POSITIONS.forEach(pos=>{
+    const drop=document.querySelector(`.pos-drop[data-pos="${pos}"]`);
+    if(!drop)return;
+    drop.innerHTML='';
+    const pid=inn.fieldSlots[pos];
+    const p=pid?getPlayer(pid):null;
+    // on field chips: show drag handle but hide edit/out buttons (too small)
+    if(p) drop.appendChild(makeChip(p,'field',pos,false,false));
+    setupDrop(drop);
+  });
+}
+
+function renderBench(){
+  const inn=innings[currentInning];
+  const bd=document.getElementById('bench-drop');
+  bd.innerHTML='';
+  // Render each bench player
+  (inn.bench||[]).forEach((pid,i)=>{
+    const p=getPlayer(pid); if(!p)return;
+    const chip=makeChip(p,'bench',i,false,false);
+    bd.appendChild(chip);
+  });
+  // Always show an empty drop target at the end
+  const emptySlot=document.createElement('div');
+  emptySlot.className='bench-empty-slot';
+  emptySlot.dataset.type='bench';
+  emptySlot.dataset.benchIdx='new';
+  setupDrop(emptySlot);
+  bd.appendChild(emptySlot);
+  setupDrop(bd);
+}
+
+function renderSubs(){
+  const pool=document.getElementById('subs-pool');
+  pool.innerHTML='';
+  if(subsPool.length===0){
+    const m=document.createElement('span');
+    m.className='empty-msg'; m.textContent='No subs added';
+    pool.appendChild(m);
+  } else {
+    subsPool.forEach(pid=>{
+      const p=getPlayer(pid); if(!p)return;
+      const chip=makeChip(p,'subs',null,false,true);
+      // Click (non-drag) adds sub to batting order
+      chip.addEventListener('click',e=>{
+        if(e.target.classList.contains('chip-btn')||e.target.classList.contains('drag-handle'))return;
+        if(!battingOrder.includes(pid)){
+          battingOrder.push(pid);
+          // Assign to open field slot or bench
+          const inn=innings[currentInning];
+          const openPos=POSITIONS.find(pos=>!inn.fieldSlots[pos]);
+          if(openPos){ inn.fieldSlots[openPos]=pid; }
+          else { inn.bench=[...(inn.bench||[]),pid]; }
+          render();
+        }
+      });
+      pool.appendChild(chip);
+    });
+  }
+  setupDrop(pool);
+}
+
+function renderOut(){
+  const pool=document.getElementById('out-pool');
+  pool.innerHTML='';
+  if(outPool.length===0){
+    const m=document.createElement('span');
+    m.className='out-empty'; m.textContent='No one out this week';
+    pool.appendChild(m);
+  } else {
+    outPool.forEach(pid=>{
+      const p=getPlayer(pid); if(!p)return;
+      pool.appendChild(makeChip(p,'out',null,false,false,true));
+    });
+  }
+}
+
+function renderPresetSelect(){
+  const sel=document.getElementById('preset-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— None —</option>';
+  presets.forEach((pr,i)=>{
+    const opt=document.createElement('option');
+    opt.value=String(i); opt.textContent=pr.name;
+    sel.appendChild(opt);
+  });
+  sel.value=cur;
+}
+
+// ══════════════════════════════════════════════════════════
+// CHIP FACTORY
+// showOutX  = show ✕ to send to out (batting panel)
+// showRemoveX = show ✕ to fully remove (subs panel)
+// showRestoreX = show ✕ to restore from out (out panel)
+// ══════════════════════════════════════════════════════════
+function makeChip(player, sourceType, sourceKey, showOutX=false, showRemoveX=false, showRestoreX=false){
+  const chip=document.createElement('div');
+  chip.className='player-chip draggable';
+  chip.dataset.playerId=player.id;
+
+  const nameEl=document.createElement('span');
+  nameEl.className='chip-name'; nameEl.textContent=player.name;
+  chip.appendChild(nameEl);
+
+  // Badges
+  const inn=innings[currentInning];
+  const inField=POSITIONS.some(pos=>inn.fieldSlots[pos]===player.id);
+  const isBench=(inn.bench||[]).includes(player.id);
+  if(sourceType==='batting'&&!inField&&!isBench){
+    const b=document.createElement('span'); b.className='bench-badge'; b.textContent='BENCH';
+    chip.appendChild(b);
+  }
+  if(sourceType==='subs' || (player.isSub && sourceType==='batting')){
+    const b=document.createElement('span'); b.className='sub-badge'; b.textContent='SUB';
+    chip.appendChild(b);
+  }
+
+  // ✎ Edit name — only in batting order
+  if(sourceType==='batting'){
+    const editBtn=document.createElement('button');
+    editBtn.className='chip-btn chip-btn-edit'; editBtn.textContent='✎'; editBtn.title='Rename';
+    editBtn.addEventListener('mousedown',e=>e.stopPropagation());
+    editBtn.addEventListener('click',e=>{ e.stopPropagation(); startInlineEdit(chip, nameEl, player); });
+    chip.appendChild(editBtn);
+  }
+
+  // ✕ Mark out
+  if(showOutX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-out'; xb.textContent='✕'; xb.title='Out this week';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); markOut(player.id); });
+    chip.appendChild(xb);
+  }
+  // ✕ Remove sub
+  if(showRemoveX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-remove'; xb.textContent='✕'; xb.title='Remove sub';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); removeSub(player.id); });
+    chip.appendChild(xb);
+  }
+  // ✕ Restore from out
+  if(showRestoreX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-restore'; xb.textContent='✕'; xb.title='Restore to lineup';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); restorePlayer(player.id); });
+    chip.appendChild(xb);
+  }
+
+  // Whole chip drags for batting, field, and bench — buttons are excluded
+  const dragTypes = ['batting','field','bench'];
+  if(dragTypes.includes(sourceType)){
+    chip.addEventListener('mousedown',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.classList.contains('chip-btn')||e.target.tagName==='INPUT') return;
+      e.preventDefault();
+      startDrag(e, player.id, sourceType, sourceKey, chip);
+    });
+    chip.addEventListener('touchstart',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.classList.contains('chip-btn')) return;
+      e.preventDefault();
+      const t=e.touches[0]; mX=t.clientX; mY=t.clientY;
+      startDrag(e, player.id, sourceType, sourceKey, chip);
+    },{passive:false});
+  }
+
+  return chip;
+}
+
+function startInlineEdit(chip, nameEl, player){
+  const inp=document.createElement('input');
+  inp.className='name-edit-input'; inp.value=player.name;
+  nameEl.replaceWith(inp);
+  inp.focus(); inp.select();
+  // remove drag handle ability while editing
+  const save=()=>{ player.name=inp.value.trim()||player.name; render(); };
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ inp.value=player.name; inp.blur(); } });
+  inp.addEventListener('mousedown',e=>e.stopPropagation());
+}
+
+function startDrag(e, playerId, sourceType, sourceKey, chip){
+  dragging={playerId, sourceType, sourceKey};
+  chip.classList.add('dragging');
+  ghostEl=chip.cloneNode(true);
+  ghostEl.querySelectorAll('button,.chip-btn').forEach(b=>b.remove());
+  ghostEl.classList.remove('dragging');
+  ghostEl.classList.add('ghost-chip');
+  ghostEl.style.width=Math.max(chip.offsetWidth,120)+'px';
+  ghostEl.style.left=(mX+14)+'px'; ghostEl.style.top=(mY-14)+'px';
+  document.body.appendChild(ghostEl);
+}
+
+// ══════════════════════════════════════════════════════════
+// DROP
+// ══════════════════════════════════════════════════════════
+function setupDrop(zone){
+  zone.addEventListener('mouseover',()=>{ if(dragging) zone.classList.add('drag-over'); });
+  zone.addEventListener('mouseout',()=>{ zone.classList.remove('drag-over'); });
+  zone.addEventListener('mouseup',()=>{ if(!dragging)return; zone.classList.remove('drag-over'); handleDrop(zone); });
+}
+
+function handleDrop(target){
+  if(!dragging)return;
+  const {playerId,sourceType,sourceKey}=dragging;
+  const player=getPlayer(playerId); if(!player)return;
+  const inn=innings[currentInning];
+
+  const tType=target.dataset.type||(target.id==='subs-pool'?'subs':target.id==='out-pool'?'out':null);
+  const tPos =target.dataset.pos||null;
+  const tIdx =target.dataset.index!=null?parseInt(target.dataset.index):null;
+  const isBenchTarget=target.id==='bench-drop'||target.dataset.type==='bench';
+  const tBenchIdx=target.dataset.benchIdx!=null?target.dataset.benchIdx:null;
+
+  function findFieldSlot(pid){
+    for(const pos of POSITIONS){ if(inn.fieldSlots[pos]===pid) return {type:'field',key:pos}; }
+    const bi=(inn.bench||[]).indexOf(pid);
+    if(bi!==-1) return {type:'bench',key:bi};
+    return null;
+  }
+
+  function clearFromField(pid){
+    POSITIONS.forEach(pos=>{ if(inn.fieldSlots[pos]===pid) inn.fieldSlots[pos]=null; });
+    inn.bench=(inn.bench||[]).filter(id=>id!==pid);
+  }
+
+  function addToBench(pid){
+    if(!(inn.bench||[]).includes(pid)) inn.bench=[...(inn.bench||[]),pid];
+  }
+
+  // ── → BATTING ──
+  if(tType==='batting'&&tIdx!=null){
+    const active=battingOrder.filter(id=>!outPool.includes(id));
+    const targetPid=active[tIdx];   // player already sitting in that batting slot
+    const srcIdx=active.indexOf(playerId);
+
+    if(srcIdx!==-1&&targetPid&&targetPid!==playerId){
+      // Both are already in the batting order — just swap their batting positions
+      const a=battingOrder.indexOf(playerId), b=battingOrder.indexOf(targetPid);
+      if(a!==-1&&b!==-1)[battingOrder[a],battingOrder[b]]=[battingOrder[b],battingOrder[a]];
+
+      // Also swap their field slots so field stays in sync
+      const slotA=findFieldSlot(playerId);
+      const slotB=findFieldSlot(targetPid);
+      // Write B's slot to A's position and vice-versa
+      function setSlot(slot, pid){
+        if(!slot){ addToBench(pid); return; }
+        if(slot.type==='field') inn.fieldSlots[slot.key]=pid;
+        else addToBench(pid);
+      }
+      // clear both first to avoid overwrite collisions
+      clearFromField(playerId);
+      clearFromField(targetPid);
+      setSlot(slotA, targetPid);
+      setSlot(slotB, playerId);
+
+    } else if(sourceType==='subs'&&!battingOrder.includes(playerId)){
+      // Sub joining the batting order
+      subsPool=subsPool.filter(id=>id!==playerId);
+      battingOrder.push(playerId);
+    } else if(sourceType==='field'||sourceType==='bench'){
+      // Dragged from a field position into a batting slot occupied by someone else
+      // Move the dragged player's field slot to bench; displace the occupant from their field slot to where the dragged player was
+      if(targetPid&&targetPid!==playerId){
+        const draggedSlot=findFieldSlot(playerId);   // where the dragged player was on the field
+        const occupantSlot=findFieldSlot(targetPid); // where the displaced player is on the field
+        clearFromField(playerId);
+        clearFromField(targetPid);
+        // Put the displaced player into the dragged player's old field slot
+        if(draggedSlot){
+          if(draggedSlot.type==='field') inn.fieldSlots[draggedSlot.key]=targetPid;
+          else inn.benchId=targetPid;
+        } else {
+          // dragged player had no field slot — displaced player goes to bench
+          if(inn.benchId===null) inn.benchId=targetPid;
+        }
+        // Swap batting order positions
+        const a=battingOrder.indexOf(playerId), b=battingOrder.indexOf(targetPid);
+        if(a!==-1&&b!==-1)[battingOrder[a],battingOrder[b]]=[battingOrder[b],battingOrder[a]];
+      }
+    }
+    render();return;
+  }
+
+  // ── → FIELD POS ──
+  if(tPos){
+    const occupant=inn.fieldSlots[tPos];
+    if(occupant===playerId){render();return;}
+    if(sourceType==='field'){
+      // SWAP: put occupant into the source slot
+      inn.fieldSlots[sourceKey]=occupant;
+    } else if(sourceType==='bench'){
+      // Swap: move bench player to field, field occupant to bench
+      clearFromField(playerId);
+      if(occupant) addToBench(occupant);
+    } else {
+      // from batting — clear any existing field slot, displace occupant to bench
+      clearFromField(playerId);
+      if(occupant) addToBench(occupant);
+    }
+    inn.fieldSlots[tPos]=playerId;
+    render();return;
+  }
+
+  // ── → BENCH ──
+  if(isBenchTarget){
+    if((inn.bench||[]).includes(playerId)){render();return;}
+    if(sourceType==='field'){
+      inn.fieldSlots[sourceKey]=null;
+    } else if(sourceType==='bench'){
+      // remove from old bench index, will be re-added
+      inn.bench=(inn.bench||[]).filter(id=>id!==playerId);
+    } else {
+      clearFromField(playerId);
+    }
+    addToBench(playerId);
+    render();return;
+  }
+
+  // ── → SUBS ──
+  if(tType==='subs'){
+    if(sourceType==='field') inn.fieldSlots[sourceKey]=null;
+    if(sourceType==='bench') inn.benchId=null;
+    if(!subsPool.includes(playerId)) subsPool.push(playerId);
+    render();return;
+  }
+
+  // ── → OUT ──
+  if(tType==='out'){ markOut(playerId); }
+}
+
+// ══════════════════════════════════════════════════════════
+// OUT / RESTORE / REMOVE
+// ══════════════════════════════════════════════════════════
+function markOut(pid){
+  if(outPool.includes(pid))return;
+  outPool.push(pid);
+  innings.forEach(inn=>{
+    POSITIONS.forEach(pos=>{ if(inn.fieldSlots[pos]===pid) inn.fieldSlots[pos]=null; });
+    inn.bench=(inn.bench||[]).filter(id=>id!==pid);
+  });
+  subsPool=subsPool.filter(id=>id!==pid);
+  render();
+}
+
+function restorePlayer(pid){
+  outPool=outPool.filter(id=>id!==pid);
+  // Try to place in an open field slot in current inning
+  const inn=innings[currentInning];
+  const alreadyPlaced=POSITIONS.some(pos=>inn.fieldSlots[pos]===pid)||(inn.bench||[]).includes(pid);
+  if(!alreadyPlaced){
+    const openPos=POSITIONS.find(pos=>!inn.fieldSlots[pos]);
+    if(openPos){
+      inn.fieldSlots[openPos]=pid;
+    } else {
+      inn.bench=[...(inn.bench||[]),pid];
+    }
+  }
+  render();
+}
+
+function removeSub(pid){
+  subsPool=subsPool.filter(id=>id!==pid);
+  players=players.filter(p=>p.id!==pid);
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+// INNINGS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-add-inning').addEventListener('click',()=>{
+  const prev=innings[innings.length-1];
+  innings.push({
+    label:'Inn '+(innings.length+1),
+    fieldSlots:{...prev.fieldSlots},
+    bench:[...(prev.bench||[])]
+  });
+  currentInning=innings.length-1;
+  render();
+});
+
+// ══════════════════════════════════════════════════════════
+// ADD SUB
+// ══════════════════════════════════════════════════════════
+function doAddSub(){
+  const inp=document.getElementById('sub-add-input');
+  const name=inp.value.trim(); if(!name)return;
+  const id=newId();
+  players.push({id,name,isSub:true});
+  subsPool.push(id);
+  inp.value='';
+  render();
+}
+document.getElementById('btn-add-sub').addEventListener('click',doAddSub);
+document.getElementById('sub-add-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doAddSub(); });
+
+// ══════════════════════════════════════════════════════════
+// CLEAR FIELD
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-clear-field').addEventListener('click',()=>{
+  const inn=innings[currentInning];
+  POSITIONS.forEach(pos=>inn.fieldSlots[pos]=null);
+  inn.benchId=null;
+  render();
+});
+
+// ══════════════════════════════════════════════════════════
+// EDIT ROSTER MODAL
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-edit-roster').addEventListener('click',()=>{
+  renderRosterModal(false);
+  document.getElementById('modal-roster').classList.remove('hidden');
+});
+document.getElementById('modal-roster-close').addEventListener('click',()=>{
+  document.getElementById('modal-roster').classList.add('hidden');
+  render();
+});
+
+function renderRosterModal(isFirst=false){
+  document.getElementById('modal-roster-title').textContent = isFirst ? 'Roster' : 'Edit Roster';
+  const closeBtn = document.getElementById('modal-roster-close');
+  closeBtn.textContent = isFirst ? "Let's Go!" : 'Done';
+  const list=document.getElementById('roster-list');
+  list.innerHTML='';
+  // only show core (non-sub) players
+  const core=players.filter(p=>!p.isSub);
+  core.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='roster-row';
+    const num=document.createElement('span');
+    num.className='roster-num'; num.textContent=i+1;
+    const inp=document.createElement('input');
+    inp.type='text'; inp.value=p.name;
+    inp.addEventListener('input',()=>{ p.name=inp.value; });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){
+      // move focus to next input
+      const inputs=list.querySelectorAll('input');
+      const idx=Array.from(inputs).indexOf(inp);
+      if(idx < inputs.length-1) inputs[idx+1].focus();
+      else inp.blur();
+    }});
+    // Select all text on click/focus so typing replaces the name immediately
+    inp.addEventListener('focus', ()=>{ inp.select(); });
+    inp.addEventListener('click', ()=>{ inp.select(); });
+    row.appendChild(num); row.appendChild(inp);
+    list.appendChild(row);
+  });
+  // Focus the first input
+  const first = list.querySelector('input');
+  if(first) setTimeout(()=>{ first.focus(); first.select(); }, 80);
+}
+
+// ══════════════════════════════════════════════════════════
+// PRESETS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-save-preset').addEventListener('click',()=>{
+  document.getElementById('preset-name-input').value='';
+  document.getElementById('modal-save').classList.remove('hidden');
+});
+document.getElementById('modal-save-cancel').addEventListener('click',()=>document.getElementById('modal-save').classList.add('hidden'));
+document.getElementById('modal-save-confirm').addEventListener('click',()=>{
+  const name=document.getElementById('preset-name-input').value.trim();
+  if(!name)return;
+  presets.push({
+    name,
+    players:players.map(p=>({...p})),
+    battingOrder:[...battingOrder],
+    innings:innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]})),
+    subsPool:[...subsPool],
+    outPool:[...outPool]
+  });
+  localStorage.setItem('slp_presets',JSON.stringify(presets));
+  document.getElementById('modal-save').classList.add('hidden');
+  renderPresetSelect();
+});
+document.getElementById('preset-name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('modal-save-confirm').click(); });
+
+document.getElementById('preset-select').addEventListener('change',e=>{
+  const idx=parseInt(e.target.value);
+  const updateBtn=document.getElementById('btn-update-preset');
+  if(isNaN(idx)){updateBtn.style.display='none';return;}
+  const pr=presets[idx]; if(!pr){updateBtn.style.display='none';return;}
+  players=[...pr.players.map(p=>({...p}))];
+  battingOrder=[...pr.battingOrder];
+  innings=pr.innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]}));
+  subsPool=[...pr.subsPool];
+  outPool=[...(pr.outPool||[])];
+  currentInning=0;
+  pidCounter=Math.max(0,...players.map(p=>parseInt(p.id.replace('p',''))||0))+1;
+  updateBtn.style.display='';
+  render();
+});
+
+document.getElementById('btn-update-preset').addEventListener('click',()=>{
+  const sel=document.getElementById('preset-select');
+  const idx=parseInt(sel.value);
+  if(isNaN(idx)||!presets[idx])return;
+  presets[idx]={
+    name:presets[idx].name,
+    players:players.map(p=>({...p})),
+    battingOrder:[...battingOrder],
+    innings:innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]})),
+    subsPool:[...subsPool],
+    outPool:[...outPool]
+  };
+  localStorage.setItem('slp_presets',JSON.stringify(presets));
+  // Flash the button to confirm
+  const btn=document.getElementById('btn-update-preset');
+  const orig=btn.textContent;
+  btn.textContent='Saved!';
+  btn.style.background='#3a8c3a';
+  setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; },1200);
+});
+
+document.getElementById('btn-manage-presets').addEventListener('click',()=>{
+  renderManageModal();
+  document.getElementById('modal-manage').classList.remove('hidden');
+});
+document.getElementById('modal-manage-close').addEventListener('click',()=>document.getElementById('modal-manage').classList.add('hidden'));
+
+function renderManageModal(){
+  const list=document.getElementById('preset-list');
+  list.innerHTML='';
+  if(!presets.length){
+    list.innerHTML='<p style="color:rgba(255,255,255,.4);font-size:.82rem">No presets saved yet.</p>';
+    return;
+  }
+  presets.forEach((pr,i)=>{
+    const row=document.createElement('div'); row.className='preset-item';
+    const nm=document.createElement('span'); nm.className='preset-item-name'; nm.textContent=pr.name;
+    const info=document.createElement('span'); info.className='preset-item-info';
+    info.textContent=`${pr.innings.length} inning${pr.innings.length!==1?'s':''}`;
+    const del=document.createElement('button'); del.className='btn btn-red btn-xs'; del.textContent='Delete';
+    del.addEventListener('click',()=>{
+      presets.splice(i,1);
+      localStorage.setItem('slp_presets',JSON.stringify(presets));
+      renderManageModal(); renderPresetSelect();
+    });
+    row.appendChild(nm); row.appendChild(info); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+render();
+
+// Open roster modal on very first load
+if(!localStorage.getItem('slp_roster_set')){
+  renderRosterModal(true);
+  document.getElementById('modal-roster').classList.remove('hidden');
+  // Mark as set when they close it
+  const origClose = document.getElementById('modal-roster-close').onclick;
+  document.getElementById('modal-roster-close').addEventListener('click', ()=>{
+    localStorage.setItem('slp_roster_set','1');
+  }, {once: true});
+}
+</script>
+</body>
+</html>
