@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Softball Game Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --grass:#2d6a2d;--grass-light:#3a8c3a;--chalk:#f5f0e8;--ink:#1a1a2e;
+  --red:#cc2200;--gold:#e8b84b;--panel:#1e2a1e;--card:#f9f5ee;--border:#c4b89a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);min-height:100vh;padding:16px;
+  background-image:radial-gradient(ellipse at 20% 80%,rgba(40,80,40,.3) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 20%,rgba(200,133,74,.15) 0%,transparent 50%)}
+h1{font-family:'Bebas Neue',sans-serif;color:var(--gold);text-align:center;font-size:2.6rem;
+  letter-spacing:4px;text-shadow:2px 2px 0 rgba(0,0,0,.5);margin-bottom:4px}
+.subtitle{text-align:center;color:rgba(245,240,232,.45);font-size:.7rem;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:14px}
+
+/* ── TOP BAR ── */
+.top-bar{max-width:1160px;margin:0 auto 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top-bar label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--gold);font-size:1rem}
+.preset-select{background:#0d1a0d;color:var(--chalk);border:1px solid rgba(255,255,255,.2);
+  border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer}
+.btn{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:.85rem;padding:5px 14px;
+  border:none;border-radius:6px;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.15)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-red{background:var(--red);color:#fff}
+.btn-dark{background:#2a3a2a;color:var(--chalk);border:1px solid rgba(255,255,255,.15)}
+.btn-sm{font-size:.75rem;padding:3px 10px}
+.btn-xs{font-size:.7rem;padding:2px 7px}
+
+/* ── INNING BAR ── */
+.inning-bar{max-width:1160px;margin:0 auto 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inning-bar label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--chalk);font-size:.9rem}
+.inn-tab{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;font-size:.8rem;padding:4px 12px;
+  border-radius:5px;border:1px solid rgba(255,255,255,.2);background:#0d1a0d;color:rgba(255,255,255,.55);
+  cursor:pointer;transition:all .15s}
+.inn-tab.active{background:var(--grass-light);color:#fff;border-color:var(--grass-light)}
+.inn-tab-add{background:transparent;border:1px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.35);
+  cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:4px 10px;border-radius:5px}
+.inn-tab-add:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── LAYOUT ── */
+.main-layout{display:grid;grid-template-columns:1fr 1.15fr;gap:14px;max-width:1160px;margin:0 auto}
+
+/* ── PANELS ── */
+.panel{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;color:var(--ink);
+  border-bottom:3px solid var(--red);padding-bottom:5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.panel-title span{flex:1}
+.field-panel{background:var(--panel);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;gap:10px}
+.field-panel .panel-title{color:var(--chalk);border-color:var(--grass-light)}
+
+/* ── BATTING SLOTS ── */
+.batting-slot{display:flex;align-items:center;gap:8px;padding:4px 2px;
+  border-bottom:1px dashed rgba(0,0,0,.12);min-height:40px}
+.batting-slot:last-child{border-bottom:none}
+.order-num{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--red);
+  width:24px;text-align:center;flex-shrink:0;line-height:1}
+.slot-drop{flex:1;min-height:32px;border:2px dashed transparent;border-radius:6px;
+  display:flex;align-items:center;transition:border-color .15s,background .15s}
+.slot-drop.drag-over{border-color:var(--red);background:rgba(204,34,0,.07)}
+
+/* ── PLAYER CHIPS ── */
+.player-chip{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--chalk);
+  padding:5px 8px 5px 6px;border-radius:6px;user-select:none;font-size:.82rem;font-weight:600;
+  letter-spacing:.4px;transition:opacity .2s;width:100%;border:1px solid rgba(255,255,255,.08)}
+.player-chip.draggable{cursor:grab}
+.player-chip.draggable:active{cursor:grabbing}
+.player-chip.dragging{opacity:.3}
+.drag-handle{display:none}
+.chip-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* badges */
+.bench-badge{font-size:.58rem;background:var(--gold);color:var(--ink);padding:1px 5px;
+  border-radius:3px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
+.sub-badge{font-size:.58rem;background:#1a3a3a;color:#aef;padding:1px 5px;
+  border-radius:3px;font-weight:700;letter-spacing:.5px;flex-shrink:0}
+
+/* chip action buttons */
+.chip-btn{background:none;border:none;cursor:pointer;font-size:.85rem;line-height:1;
+  padding:0 2px;flex-shrink:0;font-weight:700;transition:color .1s}
+.chip-btn-out{color:rgba(255,80,80,.6)}
+.chip-btn-out:hover{color:#ff5555}
+.chip-btn-restore{color:rgba(255,80,80,.7)}
+.chip-btn-restore:hover{color:#ff4444}
+.chip-btn-edit{color:rgba(255,255,255,.35)}
+.chip-btn-edit:hover{color:var(--gold)}
+.chip-btn-remove{color:rgba(255,80,80,.5)}
+.chip-btn-remove:hover{color:#ff4444}
+
+/* inline name edit */
+.name-edit-input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+  border-radius:4px;outline:none;color:var(--chalk);font:inherit;font-weight:600;
+  padding:1px 4px;width:100%;min-width:50px}
+
+/* is-out chip */
+.player-chip.is-out{background:#2a0a0a;border-color:rgba(200,50,50,.3);opacity:.8}
+
+/* ── FIELD ── */
+.field-row{display:flex;gap:10px;align-items:flex-start}
+.field-svg-wrap{flex:1;position:relative}
+.field-bg{width:100%;aspect-ratio:1/.82;border-radius:8px;position:relative;
+  background:radial-gradient(ellipse 90% 100% at 50% 100%,#2a5f1e 0%,#1e4a14 40%,#163d10 100%)}
+.dirt-overlay{position:absolute;bottom:11%;left:50%;transform:translateX(-50%);
+  width:54%;aspect-ratio:1;background:radial-gradient(ellipse,#b5763a 0%,#9a612e 100%);
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
+.field-bg::before,.field-bg::after{content:'';position:absolute;bottom:7%;width:2px;height:58%;
+  background:rgba(255,255,255,.22);transform-origin:bottom center}
+.field-bg::before{left:50%;transform:translateX(-50%) rotate(-45deg)}
+.field-bg::after{left:50%;transform:translateX(-50%) rotate(45deg)}
+
+.pos-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px}
+.pos-label{font-family:'Bebas Neue',sans-serif;font-size:.6rem;letter-spacing:1.5px;
+  color:rgba(255,255,255,.5);background:rgba(0,0,0,.45);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.pos-drop{min-width:84px;min-height:30px;border:2px dashed rgba(255,255,255,.18);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s}
+.pos-drop.drag-over{border-color:var(--gold);background:rgba(232,184,75,.15)}
+.pos-drop .player-chip{font-size:.74rem;padding:3px 6px 3px 5px;background:rgba(10,20,10,.88)}
+.pos-drop .player-chip .chip-btn{display:none}
+
+#slot-LF  {left:17%;top:22%} #slot-LCF{left:34%;top:11%}
+#slot-RCF {left:66%;top:11%} #slot-RF {left:83%;top:22%}
+#slot-SS  {left:34%;top:43%} #slot-2B {left:63%;top:43%}
+#slot-3B  {left:19%;top:55%} #slot-1B {left:81%;top:55%}
+#slot-P   {left:50%;top:55%} #slot-C  {left:50%;top:82%}
+
+/* ── BENCH COL ── */
+.bench-col{width:108px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.bench-col-title{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:2px;
+  color:var(--gold);text-align:center}
+.bench-drop{min-height:34px;border:2px dashed rgba(232,184,75,.35);border-radius:6px;
+  background:rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:stretch;gap:4px;
+  padding:4px;transition:border-color .15s,background .15s}
+.bench-drop.drag-over{border-color:var(--gold);background:rgba(232,184,75,.15)}
+.bench-drop .player-chip{font-size:.74rem;padding:3px 6px 3px 5px;background:rgba(40,20,0,.9)}
+.bench-empty-slot{min-height:28px;border:1px dashed rgba(232,184,75,.2);border-radius:5px;
+  background:transparent;transition:border-color .15s,background .15s}
+.bench-empty-slot.drag-over{border-color:var(--gold);background:rgba(232,184,75,.12)}
+
+/* ── NOTES ── */
+.notes-area{display:flex;flex-direction:column;gap:4px}
+.notes-area label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:.85rem;color:rgba(255,255,255,.55)}
+.notes-textarea{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);border-radius:6px;
+  color:var(--chalk);font-family:'DM Sans',sans-serif;font-size:.82rem;padding:8px 10px;
+  resize:vertical;min-height:70px;line-height:1.5;outline:none;transition:border-color .15s}
+.notes-textarea:focus{border-color:rgba(255,255,255,.35)}
+.notes-textarea::placeholder{color:rgba(255,255,255,.2)}
+
+/* ── BOTTOM ROW ── */
+.bottom-row{max-width:1160px;margin:12px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.subs-pool,.out-pool{display:flex;flex-wrap:wrap;gap:6px;min-height:40px;padding:7px;border-radius:8px;transition:border-color .15s,background .15s}
+.subs-pool{border:2px dashed var(--border)}
+.out-pool{border:2px dashed rgba(200,50,50,.4);background:rgba(40,0,0,.1)}
+.subs-pool.drag-over,.out-pool.drag-over{border-color:var(--gold);background:rgba(232,184,75,.07)}
+.subs-pool .player-chip{width:auto;background:#1a2a1a;border-color:rgba(100,200,100,.2);cursor:pointer}
+.subs-pool .player-chip:hover{background:#243a24;border-color:rgba(100,220,100,.5)}
+.out-pool .player-chip{width:auto;background:#2a0a0a;border-color:rgba(200,50,50,.25)}
+.empty-msg{color:rgba(0,0,0,.3);font-size:.75rem;font-style:italic;padding:2px 4px;align-self:center}
+.out-empty{color:rgba(255,100,100,.2);font-size:.75rem;font-style:italic;padding:2px 4px;align-self:center}
+.pool-add-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pool-add-input{flex:1;background:#f0ece3;border:1px solid var(--border);border-radius:6px;
+  padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;color:var(--ink)}
+.pool-add-input:focus{border-color:#888}
+
+.hint{text-align:center;color:rgba(245,240,232,.22);font-size:.67rem;letter-spacing:1.5px;text-transform:uppercase;margin-top:10px;padding-bottom:20px}
+
+/* ── GHOST ── */
+.ghost-chip{position:fixed;pointer-events:none;z-index:9999;opacity:.85;transform:rotate(3deg) scale(1.05);min-width:120px}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal-bg.hidden{display:none}
+.modal{background:#1a2a1a;border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:24px;min-width:300px;max-width:440px;width:90%}
+.modal h2{font-family:'Bebas Neue',sans-serif;color:var(--gold);letter-spacing:3px;font-size:1.4rem;margin-bottom:14px}
+.modal label{display:block;color:var(--chalk);font-size:.8rem;margin-bottom:4px;margin-top:10px}
+.modal input{width:100%;background:#0d1a0d;border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:var(--chalk);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.preset-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.preset-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:6px;border:1px solid rgba(255,255,255,.08)}
+.preset-item-name{flex:1;color:var(--chalk);font-size:.85rem;font-weight:600}
+.preset-item-info{color:rgba(255,255,255,.4);font-size:.72rem}
+
+/* ── ROSTER EDITOR MODAL ── */
+.roster-list{display:flex;flex-direction:column;gap:5px;max-height:320px;overflow-y:auto;margin-bottom:12px}
+.roster-row{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.25);border-radius:6px;padding:5px 8px}
+.roster-row input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+  border-radius:4px;color:var(--chalk);padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none}
+.roster-row input:focus{border-color:rgba(255,255,255,.5)}
+.roster-num{font-family:'Bebas Neue',sans-serif;color:var(--red);font-size:1.1rem;width:22px;text-align:center}
+
+/* ═══════════════════════════════════════════════
+   GAME ENGINE STYLES
+═══════════════════════════════════════════════ */
+#game-overlay{position:fixed;inset:0;z-index:3000;background:var(--ink);
+  background-image:radial-gradient(ellipse at 20% 80%,rgba(40,80,40,.3) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 20%,rgba(200,133,74,.15) 0%,transparent 50%);
+  display:flex;flex-direction:column;overflow:hidden}
+#game-overlay.hidden{display:none}
+
+/* Game top bar */
+.game-topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;flex-wrap:wrap}
+.game-topbar-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:1.4rem;letter-spacing:3px;flex:1}
+.score-board{display:flex;align-items:center;gap:14px}
+.score-team{display:flex;flex-direction:column;align-items:center;gap:1px}
+.score-label{font-size:.6rem;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+.score-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--chalk);line-height:1}
+.score-num.active{color:var(--gold)}
+.score-sep{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:rgba(255,255,255,.3)}
+.inning-display{display:flex;flex-direction:column;align-items:center;gap:1px}
+.inning-num{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--chalk)}
+.inning-arrow{font-size:.7rem;color:var(--gold)}
+.outs-display{display:flex;gap:5px;align-items:center}
+.out-dot{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:transparent;transition:background .2s}
+.out-dot.filled{background:var(--gold);border-color:var(--gold)}
+.game-nav-tabs{display:flex;gap:6px}
+.game-tab{font-family:'Bebas Neue',sans-serif;font-size:.8rem;letter-spacing:1px;padding:4px 12px;
+  border-radius:5px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.5);cursor:pointer}
+.game-tab.active{background:var(--grass-light);color:#fff;border-color:var(--grass-light)}
+
+/* Game pages */
+.game-page{display:none;flex:1;overflow-y:auto;padding:14px}
+.game-page.active{display:flex;flex-direction:column;gap:12px}
+
+/* ── AT BAT PAGE ── */
+.atbat-layout{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:12px;flex:1}
+
+/* Batter info */
+.batter-card{background:rgba(255,255,255,.05);border-radius:10px;padding:12px;
+  border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
+.batter-label{font-size:.62rem;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+.batter-name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--gold);letter-spacing:2px;line-height:1}
+.batter-num{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--red)}
+.batter-stats-mini{display:flex;gap:8px;flex-wrap:wrap}
+.stat-pill{background:rgba(0,0,0,.3);border-radius:4px;padding:2px 7px;font-size:.72rem;color:rgba(255,255,255,.6)}
+.stat-pill span{color:var(--chalk);font-weight:600}
+
+/* Count display */
+.count-area{display:flex;flex-direction:column;align-items:center;gap:8px}
+.count-row{display:flex;align-items:center;gap:10px}
+.count-label{font-family:'Bebas Neue',sans-serif;font-size:.75rem;letter-spacing:2px;
+  color:rgba(255,255,255,.4);width:50px;text-align:right}
+.count-label.right{text-align:left}
+.count-dots{display:flex;gap:5px}
+.count-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+  background:transparent;transition:background .2s,border-color .2s}
+.count-dot.ball{border-color:rgba(100,200,100,.5)}
+.count-dot.ball.filled{background:#4caf50;border-color:#4caf50}
+.count-dot.strike{border-color:rgba(200,80,80,.5)}
+.count-dot.strike.filled{background:var(--red);border-color:var(--red)}
+.count-big{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:var(--chalk);
+  letter-spacing:4px;line-height:1;text-align:center}
+.count-sep{color:rgba(255,255,255,.3)}
+
+/* Pitch buttons */
+.pitch-section{display:flex;flex-direction:column;gap:6px}
+.pitch-group-label{font-family:'Bebas Neue',sans-serif;font-size:.75rem;letter-spacing:2px;
+  color:rgba(255,255,255,.35);padding:0 2px}
+.pitch-btn{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:.85rem;
+  padding:9px 12px;border:none;border-radius:7px;cursor:pointer;transition:filter .15s,transform .1s;
+  text-align:left;width:100%}
+.pitch-btn:active{transform:scale(.97)}
+.pitch-btn:hover{filter:brightness(1.15)}
+.pitch-btn-ball{background:#1a3a1a;color:#7ecf7e;border:1px solid rgba(100,200,100,.3)}
+.pitch-btn-strike{background:#3a1a1a;color:#f08080;border:1px solid rgba(200,80,80,.3)}
+.pitch-btn-play{background:#1a2a3a;color:#80c0f0;border:1px solid rgba(80,160,240,.3)}
+.pitch-btn-special{background:#2a2a1a;color:#f0d080;border:1px solid rgba(240,200,80,.3)}
+.foul-warning{font-size:.68rem;color:#f0d080;font-style:italic;padding:0 4px;display:none}
+.foul-warning.show{display:block}
+
+/* Field hit zone */
+.field-hit-wrap{position:relative;width:100%;aspect-ratio:1/.82;border-radius:10px;overflow:hidden;
+  background:radial-gradient(ellipse 90% 100% at 50% 100%,#2a5f1e 0%,#1e4a14 45%,#163d10 100%)}
+.field-hit-wrap .dirt-overlay-g{position:absolute;bottom:10%;left:50%;transform:translateX(-50%);
+  width:52%;aspect-ratio:1;background:radial-gradient(ellipse,#b5763a 0%,#9a612e 100%);
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)}
+.field-hit-wrap::before,.field-hit-wrap::after{content:'';position:absolute;bottom:6%;width:2px;height:56%;
+  background:rgba(255,255,255,.2);transform-origin:bottom center}
+.field-hit-wrap::before{left:50%;transform:translateX(-50%) rotate(-45deg)}
+.field-hit-wrap::after{left:50%;transform:translateX(-50%) rotate(45deg)}
+
+/* Hit zone buttons on field */
+.hit-zone-btn{position:absolute;transform:translate(-50%,-50%);background:rgba(255,255,255,.08);
+  border:1px dashed rgba(255,255,255,.2);border-radius:6px;font-size:.6rem;font-family:'Bebas Neue',sans-serif;
+  letter-spacing:1px;color:rgba(255,255,255,.5);cursor:pointer;padding:3px 6px;transition:all .15s;
+  white-space:nowrap}
+.hit-zone-btn:hover,.hit-zone-btn.selected{background:rgba(232,184,75,.25);border-color:var(--gold);color:var(--gold)}
+.hit-zone-btn.out-zone:hover,.hit-zone-btn.out-zone.selected{background:rgba(204,34,0,.25);border-color:var(--red);color:#ff8080}
+
+/* fielder positions for hit zones */
+.hz-LF  {left:17%;top:22%} .hz-LCF{left:34%;top:11%}
+.hz-CF  {left:50%;top:10%} .hz-RCF{left:66%;top:11%}
+.hz-RF  {left:83%;top:22%} .hz-SS {left:34%;top:43%}
+.hz-2B  {left:63%;top:43%} .hz-3B {left:18%;top:55%}
+.hz-1B  {left:82%;top:55%} .hz-P  {left:50%;top:55%}
+.hz-C   {left:50%;top:82%}
+.hz-GAP-L{left:25%;top:16%} .hz-GAP-R{left:75%;top:16%}
+.hz-LINE-L{left:8%;top:35%} .hz-LINE-R{left:92%;top:35%}
+.hz-INFIELD{left:50%;top:68%}
+
+/* Result confirm */
+.result-confirm{background:rgba(0,0,0,.5);border-radius:8px;padding:10px 12px;
+  border:1px solid rgba(255,255,255,.1);display:none;flex-direction:column;gap:6px}
+.result-confirm.show{display:flex}
+.result-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:2px;color:var(--gold)}
+.result-btns{display:flex;gap:6px;flex-wrap:wrap}
+.result-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:1px;padding:5px 10px;
+  border:none;border-radius:5px;cursor:pointer;transition:filter .15s}
+.result-btn:hover{filter:brightness(1.15)}
+.result-btn-hit{background:#1a4a1a;color:#adf0ad;border:1px solid rgba(100,200,100,.3)}
+.result-btn-out{background:#4a1a1a;color:#f0aaaa;border:1px solid rgba(200,80,80,.3)}
+.result-btn-error{background:#3a2a0a;color:#f0d080;border:1px solid rgba(240,200,80,.3)}
+
+/* Error modal */
+.error-modal{background:#1a1a0a;border:1px solid rgba(240,200,80,.3);border-radius:10px;
+  padding:14px;display:none;flex-direction:column;gap:8px}
+.error-modal.show{display:flex}
+.error-modal-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);letter-spacing:2px;font-size:1rem}
+.error-type-btns{display:flex;gap:6px;flex-wrap:wrap}
+.error-type-btn{font-family:'Bebas Neue',sans-serif;font-size:.75rem;padding:5px 10px;
+  border-radius:5px;border:1px solid rgba(240,200,80,.3);background:rgba(240,200,80,.08);
+  color:#f0d080;cursor:pointer;transition:all .15s}
+.error-type-btn:hover,.error-type-btn.selected{background:rgba(240,200,80,.25);border-color:var(--gold)}
+
+/* ── BASES ── */
+.bases-area{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bases-diamond{position:relative;width:100px;height:100px;flex-shrink:0}
+.base-sq{position:absolute;width:20px;height:20px;background:rgba(255,255,255,.1);
+  border:2px solid rgba(255,255,255,.25);transform:rotate(45deg);cursor:pointer;transition:all .2s}
+.base-sq.occupied{background:var(--gold);border-color:var(--gold)}
+.base-sq.just-scored{background:#4caf50;border-color:#4caf50}
+.base-home{bottom:2px;left:50%;transform:translateX(-50%) rotate(45deg)}
+.base-1b{right:2px;top:50%;transform:translateY(-50%) rotate(45deg)}
+.base-2b{top:2px;left:50%;transform:translateX(-50%) rotate(45deg)}
+.base-3b{left:2px;top:50%;transform:translateY(-50%) rotate(45deg)}
+.bases-label{font-size:.6rem;letter-spacing:1.5px;color:rgba(255,255,255,.35);text-transform:uppercase}
+.runner-controls{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.runner-btn{font-family:'Bebas Neue',sans-serif;font-size:.68rem;padding:3px 8px;border-radius:4px;
+  border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);cursor:pointer}
+.runner-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── STATS PAGE ── */
+.stats-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.stats-table th{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;font-size:.75rem;
+  color:rgba(255,255,255,.5);border-bottom:2px solid rgba(255,255,255,.1);padding:6px 8px;text-align:center;white-space:nowrap}
+.stats-table th:first-child{text-align:left}
+.stats-table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  color:var(--chalk);text-align:center;white-space:nowrap}
+.stats-table td:first-child{text-align:left;font-weight:600}
+.stats-table tr:last-child td{border-bottom:none}
+.stats-table tr:hover td{background:rgba(255,255,255,.03)}
+.stats-section-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);letter-spacing:3px;
+  font-size:1.1rem;border-bottom:2px solid rgba(232,184,75,.3);padding-bottom:5px;margin-bottom:8px}
+
+/* ── GAME LOG ── */
+.game-log{display:flex;flex-direction:column;gap:4px}
+.log-entry{font-size:.78rem;color:rgba(255,255,255,.7);padding:5px 8px;border-radius:5px;
+  background:rgba(255,255,255,.04);border-left:3px solid transparent}
+.log-entry.log-hit{border-color:#4caf50}
+.log-entry.log-out{border-color:var(--red)}
+.log-entry.log-walk{border-color:#4090f0}
+.log-entry.log-run{border-color:var(--gold)}
+.log-entry.log-error{border-color:#f0d080}
+.log-inning-header{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:rgba(255,255,255,.4);
+  font-size:.8rem;padding:8px 4px 2px;border-top:1px solid rgba(255,255,255,.08);margin-top:4px}
+
+/* ── PRE-GAME MODAL ── */
+.pregame-modal{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.8);
+  display:flex;align-items:center;justify-content:center}
+.pregame-modal.hidden{display:none}
+.pregame-card{background:#1a2a1a;border:1px solid rgba(255,255,255,.15);border-radius:14px;
+  padding:28px;width:90%;max-width:420px;display:flex;flex-direction:column;gap:16px}
+.pregame-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:2rem;letter-spacing:4px;text-align:center}
+.pregame-row{display:flex;flex-direction:column;gap:6px}
+.pregame-row label{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:rgba(255,255,255,.6);font-size:.85rem}
+.pregame-toggle{display:flex;gap:8px}
+.toggle-btn{flex:1;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:.9rem;
+  padding:10px;border-radius:7px;border:2px solid rgba(255,255,255,.15);background:transparent;
+  color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s}
+.toggle-btn.active{background:var(--grass-light);color:#fff;border-color:var(--grass-light)}
+.pregame-input{background:#0d1a0d;border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:var(--chalk);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;width:100%}
+.mercy-row{display:flex;gap:8px;align-items:center}
+.mercy-row input{flex:1}
+.mercy-check-label{color:rgba(255,255,255,.6);font-size:.8rem;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+
+/* End game overlay */
+.end-game-banner{background:linear-gradient(135deg,#1a3a1a,#0d1a0d);border:2px solid var(--gold);
+  border-radius:12px;padding:20px;text-align:center;display:none;flex-direction:column;gap:8px}
+.end-game-banner.show{display:flex}
+.end-game-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:2rem;letter-spacing:4px}
+.end-game-score{font-family:'Bebas Neue',sans-serif;color:var(--chalk);font-size:3rem;letter-spacing:6px}
+
+
+
+
+/* ── REDESIGNED AT BAT LAYOUT ── */
+.atbat-top-bar{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;
+  background:rgba(255,255,255,.04);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+.atb-batter-info{display:flex;flex-direction:column;gap:3px}
+.atb-order{font-family:'Bebas Neue',sans-serif;color:var(--red);font-size:1rem}
+.atb-name{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:1.4rem;letter-spacing:2px;line-height:1.1}
+.atb-count-block{display:flex;flex-direction:column;align-items:center;gap:4px}
+.atb-count-row{display:flex;align-items:center;gap:10px}
+.atb-count-col{display:flex;flex-direction:column;align-items:center;gap:3px}
+.atb-ondeck{display:flex;flex-direction:column;gap:2px;text-align:right}
+
+.atbat-main-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.atbat-pitch-col{display:flex;flex-direction:column;gap:6px}
+.atbat-right-col{display:flex;flex-direction:column;gap:6px}
+
+/* IN PLAY MODAL */
+.inplay-modal{position:absolute;inset:0;z-index:100;background:var(--ink);
+  background-image:radial-gradient(ellipse at 20% 80%,rgba(40,80,40,.3) 0%,transparent 50%);
+  display:flex;flex-direction:column;overflow-y:auto}
+.inplay-modal.hidden{display:none}
+.inplay-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+  background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.inplay-title{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:1.3rem;letter-spacing:3px}
+.inplay-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px;flex:1}
+.inplay-field-wrap{display:flex;flex-direction:column;gap:6px}
+.inplay-panels{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+
+/* Throw panel */
+.throw-panel{background:rgba(0,0,80,.3);border:1px solid rgba(100,100,255,.3);border-radius:10px;
+  padding:12px;display:flex;flex-direction:column;gap:8px}
+.throw-panel.hidden{display:none}
+
+/* Make game-page position relative so inplay modal is scoped */
+#page-atbat{position:relative;overflow:hidden}
+
+@media(max-width:700px){
+  /* ── General ── */
+  body{padding:8px}
+  h1{font-size:1.8rem;letter-spacing:2px;margin-bottom:2px}
+  .subtitle{font-size:.6rem;margin-bottom:6px}
+
+  /* ── Sheet sync bar ── */
+  .sheet-sync-bar{flex-wrap:wrap;gap:5px;padding:6px 8px}
+  .sheet-url-input{min-width:0;font-size:.72rem}
+  .btn-sm{font-size:.68rem;padding:4px 8px}
+  .sync-status{width:100%;text-align:center}
+
+  /* ── Top bar ── */
+  .top-bar{gap:5px;margin-bottom:6px}
+  .top-bar label{display:none}
+  .preset-select{font-size:.75rem;padding:4px 6px;flex:1;min-width:0}
+
+  /* ── Inning bar ── */
+  .inning-bar{gap:4px;margin-bottom:6px}
+  .inning-bar label{display:none}
+  .inn-tab{font-size:.7rem;padding:4px 8px}
+
+  /* ── Main layout: single column ── */
+  .main-layout{grid-template-columns:1fr;gap:8px}
+  .bottom-row{grid-template-columns:1fr;gap:8px}
+
+  /* ── Batting order ── */
+  .batting-slot{min-height:44px}
+  .order-num{font-size:1.2rem;width:20px}
+  .player-chip{font-size:.85rem;padding:8px 8px;min-height:38px;border-radius:5px}
+
+  /* ── Field panel: stack field and bench vertically ── */
+  .field-row{flex-direction:column;gap:8px}
+  .field-bg{aspect-ratio:1/.78}
+
+  /* ── Field pos drops: bigger touch targets ── */
+  .pos-drop{min-width:52px;min-height:26px}
+  .pos-drop .player-chip{font-size:.62rem;padding:2px 4px;min-height:24px}
+  .pos-label{font-size:.52rem;padding:1px 3px}
+
+  /* ── Field slot positions: tighten up for small screen ── */
+  #slot-LF  {left:12%;top:22%} #slot-LCF{left:30%;top:11%}
+  #slot-RCF {left:70%;top:11%} #slot-RF {left:88%;top:22%}
+  #slot-SS  {left:32%;top:44%} #slot-2B {left:65%;top:44%}
+  #slot-3B  {left:14%;top:57%} #slot-1B {left:86%;top:57%}
+  #slot-P   {left:50%;top:57%} #slot-C  {left:50%;top:83%}
+
+  /* ── Bench: horizontal row below field ── */
+  .bench-col{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+  .bench-col-title{white-space:nowrap;font-size:.75rem}
+  .bench-drop{flex-direction:row;flex-wrap:wrap;min-height:36px;flex:1;padding:3px}
+  .bench-drop .player-chip{font-size:.75rem;padding:4px 6px;width:auto}
+
+  /* ── Notes ── */
+  .notes-textarea{min-height:50px;font-size:.82rem}
+
+  /* ── Subs/Out ── */
+  .subs-pool,.out-pool{min-height:36px}
+  .subs-pool .player-chip,.out-pool .player-chip{font-size:.82rem;padding:6px 8px}
+  .pool-add-input{font-size:.82rem;padding:5px 8px}
+
+  /* ── Game topbar ── */
+  .game-topbar{padding:6px 8px;gap:6px;flex-wrap:wrap}
+  .game-topbar-title{font-size:1rem;letter-spacing:1px}
+  .score-num{font-size:1.4rem}
+  .score-label{font-size:.55rem}
+  .game-nav-tabs{gap:4px}
+  .game-tab{font-size:.7rem;padding:4px 8px}
+  .out-dot{width:10px;height:10px}
+
+  /* ── At bat top bar ── */
+  .atbat-top-bar{grid-template-columns:1fr auto;gap:6px;padding:8px}
+  .atb-ondeck{display:none}
+  .atb-name{font-size:1.1rem}
+  .count-big{font-size:2.2rem}
+  .count-dot{width:14px;height:14px}
+
+  /* ── At bat main grid: single column ── */
+  .atbat-main-grid{grid-template-columns:1fr;gap:8px}
+  .pitch-btn{font-size:.88rem;padding:12px 10px;min-height:48px}
+
+  /* ── Bases ── */
+  .bases-diamond{width:80px;height:80px}
+  .base-sq{width:16px;height:16px}
+  .runner-controls{gap:4px}
+  .runner-btn{font-size:.7rem;padding:4px 8px}
+
+  /* ── In play modal ── */
+  .inplay-body{grid-template-columns:1fr;gap:8px}
+  .inplay-panels{max-height:none}
+  .inplay-header{padding:8px 10px}
+  .inplay-title{font-size:1rem}
+
+  /* ── Modals ── */
+  .modal{padding:16px;width:96%}
+  .pregame-card{padding:18px;width:96%}
+
+  /* ── Stats table ── */
+  .stats-table{font-size:.72rem}
+  .stats-table th,.stats-table td{padding:4px 5px}
+
+  /* ── Hint ── */
+  .hint{font-size:.6rem;padding-bottom:16px}
+}
+
+/* ── SHEET SYNC BANNER ── */
+.sheet-sync-bar{max-width:1160px;margin:0 auto 10px;display:flex;align-items:center;gap:8px;
+  background:rgba(0,80,0,.2);border:1px solid rgba(0,200,0,.2);border-radius:8px;padding:8px 12px}
+.sheet-url-input{flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);border-radius:5px;
+  color:var(--chalk);padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none}
+.sheet-url-input::placeholder{color:rgba(255,255,255,.25)}
+.sync-status{font-size:.72rem;color:rgba(100,255,100,.6);white-space:nowrap}
+
+/* ── DRAG BALL ── */
+.drag-ball-wrap{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+.drag-ball{position:absolute;width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fff 0%,#e8e0c8 40%,#c8b880 100%);
+  border:2px solid rgba(0,0,0,.3);cursor:grab;pointer-events:all;
+  display:flex;align-items:center;justify-content:center;font-size:10px;
+  box-shadow:2px 2px 6px rgba(0,0,0,.5);transition:transform .1s;z-index:20;
+  left:calc(50% - 14px);top:calc(55% - 14px)}
+.drag-ball:active{cursor:grabbing;transform:scale(1.15)}
+.drag-ball-ghost{position:fixed;pointer-events:none;z-index:9999;width:28px;height:28px;
+  border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0%,#e8e0c8 40%,#c8b880 100%);
+  border:2px solid rgba(0,0,0,.3);opacity:.85;transform:scale(1.1)}
+/* Fence arc overlay */
+.fence-arc{position:absolute;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
+/* Zone highlight */
+.hit-zone-btn.drag-hover{background:rgba(232,184,75,.4)!important;border-color:var(--gold)!important;
+  color:var(--gold)!important;transform:scale(1.05)}
+.hit-zone-btn.drag-hover-out{background:rgba(204,34,0,.35)!important;border-color:var(--red)!important;
+  color:#ff8080!important}
+/* HR zone */
+.hr-zone-indicator{position:absolute;top:2%;left:5%;right:5%;height:7%;
+  border:2px dashed rgba(232,184,75,.4);border-radius:50%;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;z-index:6}
+.hr-zone-indicator span{font-family:'Bebas Neue',sans-serif;font-size:.65rem;
+  color:rgba(232,184,75,.5);letter-spacing:2px}
+.hr-zone-indicator.drag-hover-hr{border-color:var(--gold);background:rgba(232,184,75,.15)}
+.hr-zone-indicator.drag-hover-hr span{color:var(--gold)}
+
+/* ── EXTRAS/TIE ── */
+.extras-banner{background:linear-gradient(135deg,#1a1a3a,#0d0d1a);border:2px solid #4040ff;
+  border-radius:10px;padding:12px;text-align:center;display:none;flex-direction:column;gap:6px;margin-bottom:10px}
+.extras-banner.show{display:flex}
+.extras-title{font-family:'Bebas Neue',sans-serif;color:#8080ff;font-size:1.3rem;letter-spacing:3px}
+</style>
+</head>
+<body>
+
+<h1>Softball Lineup</h1>
+<p class="subtitle">Slow Pitch · Game Tracker · Stats sync to Google Sheets</p>
+<div class="sheet-sync-bar">
+  <span style="font-family:'Bebas Neue',sans-serif;color:rgba(100,255,100,.7);letter-spacing:2px;font-size:.85rem;white-space:nowrap">SHEET URL:</span>
+  <input class="sheet-url-input" id="sheet-url-input" placeholder="Paste your Google Apps Script Web App URL here…" />
+  <button class="btn btn-dark btn-sm" id="btn-save-sheet-url">Save</button>
+  <button class="btn btn-dark btn-sm" id="btn-push-presets" title="Save presets to Google Sheet">⬆ Push Presets</button>
+  <button class="btn btn-dark btn-sm" id="btn-pull-presets" title="Load presets from Google Sheet">⬇ Pull Presets</button>
+  <span class="sync-status" id="sync-status">Not configured</span>
+</div>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <label>PRESET:</label>
+  <select class="preset-select" id="preset-select"><option value="">— None —</option></select>
+  <button class="btn btn-gold btn-sm" id="btn-save-preset">Save Preset</button>
+  <button class="btn btn-dark btn-sm" id="btn-update-preset" style="display:none">Update Preset</button>
+  <button class="btn btn-dark btn-sm" id="btn-manage-presets">Manage</button>
+  <button class="btn btn-dark btn-sm" id="btn-edit-roster">Edit Roster</button>
+  <button class="btn btn-dark btn-sm" id="btn-clear-field">Clear Field</button>
+  <button class="btn btn-gold btn-sm" id="btn-start-game">▶ Start Game</button>
+</div>
+
+<!-- Inning tabs -->
+<div class="inning-bar">
+  <label>INNING:</label>
+  <div id="inning-tabs"></div>
+  <button class="inn-tab-add" id="btn-add-inning">+ Inning</button>
+</div>
+
+<div class="main-layout">
+  <!-- Batting Order -->
+  <div class="panel">
+    <div class="panel-title"><span>Batting Order</span></div>
+    <div id="batting-order"></div>
+  </div>
+
+  <!-- Field + Bench -->
+  <div class="field-panel">
+    <div class="panel-title"><span>Field Positions</span></div>
+    <div class="field-row">
+      <div class="field-svg-wrap">
+        <div class="field-bg">
+          <div class="dirt-overlay"></div>
+          <div class="pos-slot" id="slot-LF"><span class="pos-label">LF</span><div class="pos-drop" data-pos="LF"></div></div>
+          <div class="pos-slot" id="slot-LCF"><span class="pos-label">LC</span><div class="pos-drop" data-pos="LCF"></div></div>
+          <div class="pos-slot" id="slot-RCF"><span class="pos-label">RC</span><div class="pos-drop" data-pos="RCF"></div></div>
+          <div class="pos-slot" id="slot-RF"><span class="pos-label">RF</span><div class="pos-drop" data-pos="RF"></div></div>
+          <div class="pos-slot" id="slot-SS"><span class="pos-label">SS</span><div class="pos-drop" data-pos="SS"></div></div>
+          <div class="pos-slot" id="slot-2B"><span class="pos-label">2B</span><div class="pos-drop" data-pos="2B"></div></div>
+          <div class="pos-slot" id="slot-3B"><span class="pos-label">3B</span><div class="pos-drop" data-pos="3B"></div></div>
+          <div class="pos-slot" id="slot-1B"><span class="pos-label">1B</span><div class="pos-drop" data-pos="1B"></div></div>
+          <div class="pos-slot" id="slot-P"><span class="pos-label">P</span><div class="pos-drop" data-pos="P"></div></div>
+          <div class="pos-slot" id="slot-C"><span class="pos-label">C</span><div class="pos-drop" data-pos="C"></div></div>
+        </div>
+      </div>
+      <div class="bench-col">
+        <div class="bench-col-title">BENCH</div>
+        <div class="bench-drop" id="bench-drop" data-type="bench"></div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-area">
+      <label>NOTES</label>
+      <textarea class="notes-textarea" id="notes-field" placeholder="Lineup notes, reminders, game info…"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom row -->
+<div class="bottom-row">
+  <div class="panel">
+    <div class="panel-title" style="border-color:#3a8c3a"><span>Subs / Available</span></div>
+    <div class="subs-pool" id="subs-pool" data-type="subs"></div>
+    <div class="pool-add-row">
+      <input class="pool-add-input" id="sub-add-input" placeholder="Add sub name…" />
+      <button class="btn btn-dark btn-sm" id="btn-add-sub">Add</button>
+    </div>
+  </div>
+  <div class="panel" style="background:#1a0a0a;border-color:rgba(200,50,50,.3)">
+    <div class="panel-title" style="color:#cc4444;border-color:#7a1a1a"><span>Out This Week</span></div>
+    <div class="out-pool" id="out-pool" data-type="out"></div>
+  </div>
+</div>
+
+<p class="hint">Drag ⠿ handle to move players · ✎ to rename · ✕ to mark out or restore · Field positions swap when both are filled</p>
+
+<!-- Save Preset Modal -->
+<div class="modal-bg hidden" id="modal-save">
+  <div class="modal">
+    <h2>Save Preset</h2>
+    <label>Preset Name</label>
+    <input type="text" id="preset-name-input" placeholder="e.g. Default, Tournament…">
+    <div class="modal-btns">
+      <button class="btn btn-dark" id="modal-save-cancel">Cancel</button>
+      <button class="btn btn-gold" id="modal-save-confirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Presets Modal -->
+<div class="modal-bg hidden" id="modal-manage">
+  <div class="modal">
+    <h2>Manage Presets</h2>
+    <div class="preset-list" id="preset-list"></div>
+    <div class="modal-btns"><button class="btn btn-dark" id="modal-manage-close">Close</button></div>
+  </div>
+</div>
+
+<!-- Edit Roster Modal -->
+<div class="modal-bg hidden" id="modal-roster">
+  <div class="modal" style="max-width:380px">
+    <h2 id="modal-roster-title">Edit Roster</h2>
+    <div class="roster-list" id="roster-list"></div>
+    <div class="modal-btns"><button class="btn btn-gold" id="modal-roster-close">Done</button></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     PRE-GAME SETUP MODAL
+═══════════════════════════════════════════ -->
+<div class="pregame-modal hidden" id="pregame-modal">
+  <div class="pregame-card">
+    <div class="pregame-title">Game Setup</div>
+    <div class="pregame-row">
+      <label>Home or Away?</label>
+      <div class="pregame-toggle">
+        <button class="toggle-btn" id="pg-away" onclick="pgSelect('side','away',this)">Away (Bat First)</button>
+        <button class="toggle-btn" id="pg-home" onclick="pgSelect('side','home',this)">Home (Field First)</button>
+      </div>
+    </div>
+    <div class="pregame-row">
+      <label>Opponent Name (optional)</label>
+      <input class="pregame-input" id="pg-opponent" placeholder="Opponent…" />
+    </div>
+    <div class="pregame-row">
+      <label>Innings</label>
+      <input class="pregame-input" id="pg-innings" type="number" value="7" min="1" max="20" />
+    </div>
+    <div class="pregame-row">
+      <label>Mercy Rule</label>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label class="mercy-check-label"><input type="checkbox" id="pg-mercy-on" checked /> Enable tiered mercy</label>
+        <div style="color:rgba(255,255,255,.35);font-size:.75rem;line-height:1.6;padding:4px 8px;background:rgba(0,0,0,.2);border-radius:5px">
+          20 runs after 3 inn · 15 after 4 · 10 after 5
+        </div>
+      </div>
+    </div>
+    <div class="pregame-row">
+      <label>Extras Rule (after 7 inn ties)</label>
+      <label class="mercy-check-label"><input type="checkbox" id="pg-extras-on" checked /> Runner on 2nd, 1 out</label>
+    </div>
+    <button class="btn btn-gold" id="pg-start-btn" onclick="launchGame()" style="font-size:1rem;padding:12px" disabled>Play Ball!</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAME OVERLAY
+═══════════════════════════════════════════ -->
+<div id="game-overlay" class="hidden">
+
+  <!-- Top scoreboard bar -->
+  <div class="game-topbar">
+    <div class="game-topbar-title" id="game-title">Game</div>
+    <div class="score-board">
+      <div class="score-team">
+        <div class="score-label" id="score-us-label">US</div>
+        <div class="score-num" id="score-us">0</div>
+      </div>
+      <div class="score-sep">—</div>
+      <div class="score-team">
+        <div class="score-label" id="score-them-label">THEM</div>
+        <div class="score-num" id="score-them">0</div>
+      </div>
+    </div>
+    <div class="inning-display">
+      <div class="inning-arrow" id="inning-arrow">▲</div>
+      <div class="inning-num" id="inning-num">1</div>
+    </div>
+    <div class="outs-display">
+      <div class="out-dot" id="out0"></div>
+      <div class="out-dot" id="out1"></div>
+      <div class="out-dot" id="out2"></div>
+    </div>
+    <div class="game-nav-tabs">
+      <button class="game-tab active" onclick="showGamePage('atbat',this)">At Bat</button>
+      <button class="game-tab" onclick="showGamePage('stats',this)">Stats</button>
+      <button class="game-tab" onclick="showGamePage('log',this)">Log</button>
+    </div>
+    <button class="btn btn-dark btn-sm" onclick="endGame()">End Game</button>
+  </div>
+
+  <!-- AT BAT PAGE -->
+  <div class="game-page active" id="page-atbat">
+
+    <!-- BATTER + COUNT BAR (always visible top) -->
+    <div class="atbat-top-bar">
+      <div class="atb-batter-info">
+        <div class="atb-order" id="batter-order-num">#1</div>
+        <div class="atb-name" id="batter-name">—</div>
+        <div class="batter-stats-mini" id="batter-stats-mini"></div>
+      </div>
+      <div class="atb-count-block">
+        <div class="atb-count-row">
+          <div class="atb-count-col">
+            <div class="pitch-group-label">B</div>
+            <div class="count-dots" id="ball-dots"></div>
+          </div>
+          <div class="count-big" id="count-display">1-1</div>
+          <div class="atb-count-col">
+            <div class="pitch-group-label">S</div>
+            <div class="count-dots" id="strike-dots"></div>
+          </div>
+        </div>
+        <div class="foul-warning" id="foul-warning">⚠ Foul on 2 strikes = OUT</div>
+      </div>
+      <div class="atb-ondeck">
+        <div class="batter-label">On Deck</div>
+        <div class="atb-name" id="ondeck-name" style="font-size:.9rem">—</div>
+        <div class="batter-label" style="margin-top:4px">In Hole</div>
+        <div class="atb-name" id="inhole-name" style="font-size:.8rem;opacity:.6">—</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="atbat-main-grid">
+
+      <!-- LEFT COLUMN: pitch buttons -->
+      <div class="atbat-pitch-col">
+        <button class="pitch-btn pitch-btn-play" onclick="openInPlay()">⚾ Ball In Play</button>
+        <div style="height:6px"></div>
+        <button class="pitch-btn pitch-btn-ball" onclick="recordPitch('ball')">⬤ Ball</button>
+        <button class="pitch-btn pitch-btn-strike" onclick="recordPitch('foul')" id="btn-foul">🔺 Foul</button>
+        <button class="pitch-btn pitch-btn-strike" onclick="recordPitch('looking')">👁 Looking</button>
+        <button class="pitch-btn pitch-btn-strike" onclick="recordPitch('swinging')">💨 Swinging</button>
+        <div style="height:6px"></div>
+        <button class="pitch-btn pitch-btn-special" onclick="manualThreeOuts()" style="font-size:.75rem">End Half Inning</button>
+      </div>
+
+      <!-- RIGHT COLUMN: bases + opponent score -->
+      <div class="atbat-right-col">
+        <div class="bases-area">
+          <div class="bases-label">Base Runners</div>
+          <div class="bases-diamond">
+            <div class="base-sq base-2b" id="base-2b" onclick="toggleBase(2)"></div>
+            <div class="base-sq base-3b" id="base-3b" onclick="toggleBase(3)"></div>
+            <div class="base-sq base-1b" id="base-1b" onclick="toggleBase(1)"></div>
+            <div class="base-sq base-home" id="base-home" style="opacity:.3"></div>
+          </div>
+          <div class="runner-controls">
+            <button class="runner-btn" onclick="advanceAllRunners(1)">+1B</button>
+            <button class="runner-btn" onclick="advanceAllRunners(2)">+2B</button>
+            <button class="runner-btn" onclick="advanceAllRunners(3)">+3B</button>
+            <button class="runner-btn" onclick="advanceAllRunners(4)">HR</button>
+            <button class="runner-btn" onclick="clearBases()">Clear</button>
+          </div>
+        </div>
+        <div class="batter-card" style="gap:5px;margin-top:8px">
+          <div class="batter-label">Opponent Runs</div>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:center">
+            <button class="runner-btn" onclick="adjustOppScore(-1)" style="font-size:1rem;padding:4px 14px">−</button>
+            <span id="opp-score-display" style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--chalk)">0</span>
+            <button class="runner-btn" onclick="adjustOppScore(1)" style="font-size:1rem;padding:4px 14px">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IN PLAY MODAL (full-screen overlay within game) -->
+    <div class="inplay-modal hidden" id="inplay-modal">
+      <div class="inplay-header">
+        <div class="inplay-title">Ball In Play</div>
+        <button class="btn btn-dark btn-sm" onclick="closeInPlay()">✕ Cancel</button>
+      </div>
+      <div class="inplay-body">
+        <!-- Field drag zone -->
+        <div class="inplay-field-wrap">
+          <div class="field-hit-wrap" id="field-hit-wrap">
+            <div class="dirt-overlay-g"></div>
+            <!-- HR fence arc -->
+            <div class="hr-zone-indicator" id="hr-zone"><span>HOME RUN</span></div>
+            <!-- Hit zones -->
+            <button class="hit-zone-btn hz-LF" data-zone="LF" data-type="out">LF</button>
+            <button class="hit-zone-btn hz-LCF" data-zone="LCF" data-type="out">LC</button>
+            <button class="hit-zone-btn hz-CF" data-zone="CF" data-type="out">CF</button>
+            <button class="hit-zone-btn hz-RCF" data-zone="RCF" data-type="out">RC</button>
+            <button class="hit-zone-btn hz-RF" data-zone="RF" data-type="out">RF</button>
+            <button class="hit-zone-btn hz-GAP-L" data-zone="GAP-L" data-type="2B" style="background:rgba(100,200,100,.1);border-color:rgba(100,200,100,.25);color:rgba(100,200,100,.7)">Gap L</button>
+            <button class="hit-zone-btn hz-GAP-R" data-zone="GAP-R" data-type="2B" style="background:rgba(100,200,100,.1);border-color:rgba(100,200,100,.25);color:rgba(100,200,100,.7)">Gap R</button>
+            <button class="hit-zone-btn hz-LINE-L" data-zone="LINE-L" data-type="2B" style="background:rgba(100,200,100,.1);border-color:rgba(100,200,100,.25);color:rgba(100,200,100,.7)">Line L</button>
+            <button class="hit-zone-btn hz-LINE-R" data-zone="LINE-R" data-type="2B" style="background:rgba(100,200,100,.1);border-color:rgba(100,200,100,.25);color:rgba(100,200,100,.7)">Line R</button>
+            <button class="hit-zone-btn hz-SS" data-zone="SS" data-type="out">SS</button>
+            <button class="hit-zone-btn hz-2B" data-zone="2B" data-type="out">2B</button>
+            <button class="hit-zone-btn hz-3B" data-zone="3B" data-type="out">3B</button>
+            <button class="hit-zone-btn hz-1B" data-zone="1B" data-type="out">1B</button>
+            <button class="hit-zone-btn hz-P" data-zone="P" data-type="out">P</button>
+            <button class="hit-zone-btn hz-INFIELD" data-zone="INFIELD" data-type="1B" style="background:rgba(100,200,100,.1);border-color:rgba(100,200,100,.25);color:rgba(100,200,100,.7)">Infield Hit</button>
+            <button class="hit-zone-btn hz-C" data-zone="C" data-type="out">C</button>
+            <!-- Draggable ball starts at pitcher position -->
+            <div class="drag-ball" id="drag-ball" title="Drag to where the ball lands">⚾</div>
+          </div>
+        </div>
+        <!-- Result / throw / error panels -->
+        <div class="inplay-panels">
+          <div class="result-confirm" id="result-confirm">
+            <div class="result-title" id="result-title">Choose Result</div>
+            <div class="result-btns" id="result-btns"></div>
+          </div>
+          <!-- Throw destination panel -->
+          <div class="throw-panel hidden" id="throw-panel">
+            <div class="error-modal-title">Thrown to which base?</div>
+            <div class="error-type-btns" id="throw-base-btns"></div>
+            <div class="error-modal-title" style="margin-top:6px">Runner out?</div>
+            <div class="error-type-btns">
+              <button class="error-type-btn" id="throw-out-yes" onclick="resolveThrow(true)">Yes — Out</button>
+              <button class="error-type-btn" id="throw-out-no" onclick="resolveThrow(false)">No — Safe</button>
+            </div>
+          </div>
+          <!-- Error panel -->
+          <div class="error-modal" id="error-modal">
+            <div class="error-modal-title">Error — Assign Fielder</div>
+            <div id="error-fielder-btns" class="error-type-btns"></div>
+            <div class="error-modal-title" style="margin-top:4px">Error Type</div>
+            <div class="error-type-btns">
+              <button class="error-type-btn" onclick="selectErrorType('Throwing')" id="et-Throwing">Throwing</button>
+              <button class="error-type-btn" onclick="selectErrorType('Mishandled')" id="et-Mishandled">Mishandled</button>
+              <button class="error-type-btn" onclick="selectErrorType('Dropped')" id="et-Dropped">Dropped</button>
+              <button class="error-type-btn" onclick="selectErrorType('Bobble')" id="et-Bobble">Bobble</button>
+              <button class="error-type-btn" onclick="selectErrorType('Other')" id="et-Other">Other</button>
+            </div>
+            <button class="btn btn-gold btn-sm" id="error-confirm-btn" onclick="confirmError()" style="margin-top:4px" disabled>Confirm Error</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- End game banner -->
+    <div class="end-game-banner" id="end-game-banner">
+      <div class="end-game-title" id="end-title">Game Over</div>
+      <div class="end-game-score" id="end-score">0 — 0</div>
+      <button class="btn btn-gold" onclick="returnToLineup()">Return to Lineup</button>
+    </div>
+  </div>
+
+  <!-- STATS PAGE -->
+  <div class="game-page" id="page-stats">
+    <div class="stats-section-title">Offense</div>
+    <div style="overflow-x:auto">
+      <table class="stats-table" id="stats-table">
+        <thead><tr>
+          <th>Player</th><th>AB</th><th>H</th><th>1B</th><th>2B</th><th>3B</th><th>HR</th>
+          <th>BB</th><th>K</th><th>RBI</th><th>AVG</th>
+        </tr></thead>
+        <tbody id="stats-tbody"></tbody>
+      </table>
+    </div>
+    <div class="stats-section-title" style="margin-top:16px">Defense</div>
+    <div style="overflow-x:auto">
+      <table class="stats-table" id="def-stats-table">
+        <thead><tr>
+          <th>Player</th><th>Pos</th><th>PO</th><th>A</th><th>E</th><th>Error Types</th>
+        </tr></thead>
+        <tbody id="def-stats-tbody"></tbody>
+      </table>
+    </div>
+    <div class="stats-section-title" style="margin-top:16px">Score by Inning</div>
+    <div style="overflow-x:auto"><table class="stats-table" id="inning-table">
+      <thead id="inning-thead"><tr><th>Team</th></tr></thead>
+      <tbody id="inning-tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- LOG PAGE -->
+  <div class="game-page" id="page-log">
+    <div class="stats-section-title">Game Log</div>
+    <div class="game-log" id="game-log"></div>
+  </div>
+
+</div>
+
+<script>
+window.onerror = function(msg, src, line, col, err){
+  // Suppress cross-origin script errors (e.g. Google Fonts)
+  if(!msg || msg === 'Script error.') return true;
+  return false;
+};
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const POSITIONS = ['P','C','1B','2B','3B','SS','LF','LCF','RCF','RF'];
+const DEFAULT_NAMES = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8','Player 9','Player 10','Player 11'];
+
+let players = DEFAULT_NAMES.map((name,i)=>({id:'p'+i, name, isSub:false}));
+let battingOrder = players.map(p=>p.id); // always all 11 (minus out)
+let innings = [{
+  label:'Inn 1',
+  fieldSlots: Object.fromEntries(POSITIONS.map((pos,i)=>[pos, players[i]?.id||null])),
+  bench: [players[10]?.id||null].filter(Boolean)
+}];
+let currentInning = 0;
+let subsPool = []; // sub player ids
+let outPool  = []; // player ids marked out this week
+let presets  = JSON.parse(localStorage.getItem('slp_presets')||'[]');
+let pidCounter = players.length;
+
+function newId(){ return 'p'+(pidCounter++) }
+function getPlayer(id){ return players.find(p=>p.id===id)||null }
+
+// ══════════════════════════════════════════════════════════
+// DRAG
+// ══════════════════════════════════════════════════════════
+let dragging = null; // {playerId, sourceType, sourceKey}
+let ghostEl  = null;
+let mX=0,mY=0;
+
+document.addEventListener('mousemove',e=>{
+  mX=e.clientX; mY=e.clientY;
+  if(ghostEl){ ghostEl.style.left=(mX+14)+'px'; ghostEl.style.top=(mY-14)+'px'; }
+});
+document.addEventListener('mouseup',()=>{
+  if(ghostEl){ghostEl.remove();ghostEl=null;}
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  dragging=null;
+});
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function render(){
+  renderInningTabs();
+  renderBatting();
+  renderField();
+  renderBench();
+  renderSubs();
+  renderOut();
+  renderPresetSelect();
+}
+
+function renderInningTabs(){
+  const wrap=document.getElementById('inning-tabs');
+  wrap.innerHTML='';
+  innings.forEach((inn,i)=>{
+    const tab=document.createElement('button');
+    tab.className='inn-tab'+(i===currentInning?' active':'');
+    tab.textContent=inn.label;
+    tab.addEventListener('click',()=>{currentInning=i;render();});
+    wrap.appendChild(tab);
+  });
+}
+
+function renderBatting(){
+  const container=document.getElementById('batting-order');
+  container.innerHTML='';
+  const active=battingOrder.filter(id=>!outPool.includes(id));
+  active.forEach((pid,idx)=>{
+    const p=getPlayer(pid); if(!p)return;
+    const row=document.createElement('div');
+    row.className='batting-slot';
+    const num=document.createElement('div');
+    num.className='order-num'; num.textContent=idx+1;
+    const drop=document.createElement('div');
+    drop.className='slot-drop';
+    drop.dataset.type='batting';
+    drop.dataset.index=String(idx);
+    drop.appendChild(makeChip(p,'batting',idx,true,false));
+    setupDrop(drop);
+    row.appendChild(num); row.appendChild(drop);
+    container.appendChild(row);
+  });
+}
+
+function renderField(){
+  const inn=innings[currentInning];
+  POSITIONS.forEach(pos=>{
+    const drop=document.querySelector(`.pos-drop[data-pos="${pos}"]`);
+    if(!drop)return;
+    drop.innerHTML='';
+    const pid=inn.fieldSlots[pos];
+    const p=pid?getPlayer(pid):null;
+    // on field chips: show drag handle but hide edit/out buttons (too small)
+    if(p) drop.appendChild(makeChip(p,'field',pos,false,false));
+    setupDrop(drop);
+  });
+}
+
+function renderBench(){
+  const inn=innings[currentInning];
+  const bd=document.getElementById('bench-drop');
+  bd.innerHTML='';
+  // Render each bench player
+  (inn.bench||[]).forEach((pid,i)=>{
+    const p=getPlayer(pid); if(!p)return;
+    const chip=makeChip(p,'bench',i,false,false);
+    bd.appendChild(chip);
+  });
+  // Always show an empty drop target at the end
+  const emptySlot=document.createElement('div');
+  emptySlot.className='bench-empty-slot';
+  emptySlot.dataset.type='bench';
+  emptySlot.dataset.benchIdx='new';
+  setupDrop(emptySlot);
+  bd.appendChild(emptySlot);
+  setupDrop(bd);
+}
+
+function renderSubs(){
+  const pool=document.getElementById('subs-pool');
+  pool.innerHTML='';
+  if(subsPool.length===0){
+    const m=document.createElement('span');
+    m.className='empty-msg'; m.textContent='No subs added';
+    pool.appendChild(m);
+  } else {
+    subsPool.forEach(pid=>{
+      const p=getPlayer(pid); if(!p)return;
+      const chip=makeChip(p,'subs',null,false,true);
+      // Click (non-drag) adds sub to batting order
+      chip.addEventListener('click',e=>{
+        if(e.target.classList.contains('chip-btn')||e.target.classList.contains('drag-handle'))return;
+        if(!battingOrder.includes(pid)){
+          battingOrder.push(pid);
+          // Assign to open field slot or bench
+          const inn=innings[currentInning];
+          const openPos=POSITIONS.find(pos=>!inn.fieldSlots[pos]);
+          if(openPos){ inn.fieldSlots[openPos]=pid; }
+          else { inn.bench=[...(inn.bench||[]),pid]; }
+          render();
+        }
+      });
+      pool.appendChild(chip);
+    });
+  }
+  setupDrop(pool);
+}
+
+function renderOut(){
+  const pool=document.getElementById('out-pool');
+  pool.innerHTML='';
+  if(outPool.length===0){
+    const m=document.createElement('span');
+    m.className='out-empty'; m.textContent='No one out this week';
+    pool.appendChild(m);
+  } else {
+    outPool.forEach(pid=>{
+      const p=getPlayer(pid); if(!p)return;
+      pool.appendChild(makeChip(p,'out',null,false,false,true));
+    });
+  }
+}
+
+function renderPresetSelect(){
+  const sel=document.getElementById('preset-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— None —</option>';
+  presets.forEach((pr,i)=>{
+    const opt=document.createElement('option');
+    opt.value=String(i); opt.textContent=pr.name;
+    sel.appendChild(opt);
+  });
+  sel.value=cur;
+}
+
+// ══════════════════════════════════════════════════════════
+// CHIP FACTORY
+// showOutX  = show ✕ to send to out (batting panel)
+// showRemoveX = show ✕ to fully remove (subs panel)
+// showRestoreX = show ✕ to restore from out (out panel)
+// ══════════════════════════════════════════════════════════
+function makeChip(player, sourceType, sourceKey, showOutX=false, showRemoveX=false, showRestoreX=false){
+  const chip=document.createElement('div');
+  chip.className='player-chip draggable';
+  chip.dataset.playerId=player.id;
+
+  const nameEl=document.createElement('span');
+  nameEl.className='chip-name'; nameEl.textContent=player.name;
+  chip.appendChild(nameEl);
+
+  // Badges
+  const inn=innings[currentInning];
+  const inField=POSITIONS.some(pos=>inn.fieldSlots[pos]===player.id);
+  const isBench=(inn.bench||[]).includes(player.id);
+  if(sourceType==='batting'&&!inField&&!isBench){
+    const b=document.createElement('span'); b.className='bench-badge'; b.textContent='BENCH';
+    chip.appendChild(b);
+  }
+  if(sourceType==='subs' || (player.isSub && sourceType==='batting')){
+    const b=document.createElement('span'); b.className='sub-badge'; b.textContent='SUB';
+    chip.appendChild(b);
+  }
+
+  // ✎ Edit name — only in batting order
+  if(sourceType==='batting'){
+    const editBtn=document.createElement('button');
+    editBtn.className='chip-btn chip-btn-edit'; editBtn.textContent='✎'; editBtn.title='Rename';
+    editBtn.addEventListener('mousedown',e=>e.stopPropagation());
+    editBtn.addEventListener('click',e=>{ e.stopPropagation(); startInlineEdit(chip, nameEl, player); });
+    chip.appendChild(editBtn);
+  }
+
+  // ✕ Mark out
+  if(showOutX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-out'; xb.textContent='✕'; xb.title='Out this week';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); markOut(player.id); });
+    chip.appendChild(xb);
+  }
+  // ✕ Remove sub
+  if(showRemoveX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-remove'; xb.textContent='✕'; xb.title='Remove sub';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); removeSub(player.id); });
+    chip.appendChild(xb);
+  }
+  // ✕ Restore from out
+  if(showRestoreX){
+    const xb=document.createElement('button');
+    xb.className='chip-btn chip-btn-restore'; xb.textContent='✕'; xb.title='Restore to lineup';
+    xb.addEventListener('mousedown',e=>e.stopPropagation());
+    xb.addEventListener('click',e=>{ e.stopPropagation(); restorePlayer(player.id); });
+    chip.appendChild(xb);
+  }
+
+  // Whole chip drags for batting, field, and bench — buttons are excluded
+  const dragTypes = ['batting','field','bench'];
+  if(dragTypes.includes(sourceType)){
+    chip.addEventListener('mousedown',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.classList.contains('chip-btn')||e.target.tagName==='INPUT') return;
+      e.preventDefault();
+      startDrag(e, player.id, sourceType, sourceKey, chip);
+    });
+    chip.addEventListener('touchstart',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.classList.contains('chip-btn')) return;
+      e.preventDefault();
+      const t=e.touches[0]; mX=t.clientX; mY=t.clientY;
+      startDrag(e, player.id, sourceType, sourceKey, chip);
+    },{passive:false});
+  }
+
+  return chip;
+}
+
+function startInlineEdit(chip, nameEl, player){
+  const inp=document.createElement('input');
+  inp.className='name-edit-input'; inp.value=player.name;
+  nameEl.replaceWith(inp);
+  inp.focus(); inp.select();
+  // remove drag handle ability while editing
+  const save=()=>{ player.name=inp.value.trim()||player.name; render(); };
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ inp.value=player.name; inp.blur(); } });
+  inp.addEventListener('mousedown',e=>e.stopPropagation());
+}
+
+function startDrag(e, playerId, sourceType, sourceKey, chip){
+  // Remove any existing ghost first
+  document.querySelectorAll('.ghost-chip').forEach(g=>g.remove());
+  dragging={playerId, sourceType, sourceKey};
+  chip.classList.add('dragging');
+  ghostEl=chip.cloneNode(true);
+  ghostEl.querySelectorAll('button,.chip-btn').forEach(b=>b.remove());
+  ghostEl.classList.remove('dragging');
+  ghostEl.classList.add('ghost-chip');
+  ghostEl.style.width=Math.max(chip.offsetWidth,120)+'px';
+  ghostEl.style.left=(mX+14)+'px'; ghostEl.style.top=(mY-14)+'px';
+  document.body.appendChild(ghostEl);
+}
+
+// ══════════════════════════════════════════════════════════
+// DROP
+// ══════════════════════════════════════════════════════════
+function setupDrop(zone){
+  zone.addEventListener('mouseover',()=>{ if(dragging) zone.classList.add('drag-over'); });
+  zone.addEventListener('mouseout',()=>{ zone.classList.remove('drag-over'); });
+  zone.addEventListener('mouseup',()=>{ if(!dragging)return; zone.classList.remove('drag-over'); handleDrop(zone); });
+}
+
+function handleDrop(target){
+  if(!dragging)return;
+  const {playerId,sourceType,sourceKey}=dragging;
+  const player=getPlayer(playerId); if(!player)return;
+  const inn=innings[currentInning];
+
+  const tType=target.dataset.type||(target.id==='subs-pool'?'subs':target.id==='out-pool'?'out':null);
+  const tPos =target.dataset.pos||null;
+  const tIdx =target.dataset.index!=null?parseInt(target.dataset.index):null;
+  const isBenchTarget=target.id==='bench-drop'||target.dataset.type==='bench';
+  const tBenchIdx=target.dataset.benchIdx!=null?target.dataset.benchIdx:null;
+
+  function findFieldSlot(pid){
+    for(const pos of POSITIONS){ if(inn.fieldSlots[pos]===pid) return {type:'field',key:pos}; }
+    const bi=(inn.bench||[]).indexOf(pid);
+    if(bi!==-1) return {type:'bench',key:bi};
+    return null;
+  }
+
+  function clearFromField(pid){
+    POSITIONS.forEach(pos=>{ if(inn.fieldSlots[pos]===pid) inn.fieldSlots[pos]=null; });
+    inn.bench=(inn.bench||[]).filter(id=>id!==pid);
+  }
+
+  function addToBench(pid){
+    if(!(inn.bench||[]).includes(pid)) inn.bench=[...(inn.bench||[]),pid];
+  }
+
+  // ── → BATTING ──
+  if(tType==='batting'&&tIdx!=null){
+    const active=battingOrder.filter(id=>!outPool.includes(id));
+    const targetPid=active[tIdx];   // player already sitting in that batting slot
+    const srcIdx=active.indexOf(playerId);
+
+    if(srcIdx!==-1&&targetPid&&targetPid!==playerId){
+      // Both are already in the batting order — just swap their batting positions
+      const a=battingOrder.indexOf(playerId), b=battingOrder.indexOf(targetPid);
+      if(a!==-1&&b!==-1)[battingOrder[a],battingOrder[b]]=[battingOrder[b],battingOrder[a]];
+
+      // Also swap their field slots so field stays in sync
+      const slotA=findFieldSlot(playerId);
+      const slotB=findFieldSlot(targetPid);
+      // Write B's slot to A's position and vice-versa
+      function setSlot(slot, pid){
+        if(!slot){ addToBench(pid); return; }
+        if(slot.type==='field') inn.fieldSlots[slot.key]=pid;
+        else addToBench(pid);
+      }
+      // clear both first to avoid overwrite collisions
+      clearFromField(playerId);
+      clearFromField(targetPid);
+      setSlot(slotA, targetPid);
+      setSlot(slotB, playerId);
+
+    } else if(sourceType==='subs'&&!battingOrder.includes(playerId)){
+      // Sub joining the batting order
+      subsPool=subsPool.filter(id=>id!==playerId);
+      battingOrder.push(playerId);
+    } else if(sourceType==='field'||sourceType==='bench'){
+      // Dragged from a field position into a batting slot occupied by someone else
+      // Move the dragged player's field slot to bench; displace the occupant from their field slot to where the dragged player was
+      if(targetPid&&targetPid!==playerId){
+        const draggedSlot=findFieldSlot(playerId);   // where the dragged player was on the field
+        const occupantSlot=findFieldSlot(targetPid); // where the displaced player is on the field
+        clearFromField(playerId);
+        clearFromField(targetPid);
+        // Put the displaced player into the dragged player's old field slot
+        if(draggedSlot){
+          if(draggedSlot.type==='field') inn.fieldSlots[draggedSlot.key]=targetPid;
+          else { if(!(inn.bench||[]).includes(targetPid)) inn.bench=[...(inn.bench||[]),targetPid]; }
+        } else {
+          // dragged player had no field slot — displaced player goes to bench
+          if(!(inn.bench||[]).includes(targetPid)) inn.bench=[...(inn.bench||[]),targetPid];
+        }
+        // Swap batting order positions
+        const a=battingOrder.indexOf(playerId), b=battingOrder.indexOf(targetPid);
+        if(a!==-1&&b!==-1)[battingOrder[a],battingOrder[b]]=[battingOrder[b],battingOrder[a]];
+      }
+    }
+    render();return;
+  }
+
+  // ── → FIELD POS ──
+  if(tPos){
+    const occupant=inn.fieldSlots[tPos];
+    if(occupant===playerId){render();return;}
+    if(sourceType==='field'){
+      // SWAP: put occupant into the source slot
+      inn.fieldSlots[sourceKey]=occupant;
+    } else if(sourceType==='bench'){
+      // Swap: move bench player to field, field occupant to bench
+      clearFromField(playerId);
+      if(occupant) addToBench(occupant);
+    } else {
+      // from batting — clear any existing field slot, displace occupant to bench
+      clearFromField(playerId);
+      if(occupant) addToBench(occupant);
+    }
+    inn.fieldSlots[tPos]=playerId;
+    render();return;
+  }
+
+  // ── → BENCH ──
+  if(isBenchTarget){
+    if((inn.bench||[]).includes(playerId)){render();return;}
+    if(sourceType==='field'){
+      inn.fieldSlots[sourceKey]=null;
+    } else if(sourceType==='bench'){
+      // remove from old bench index, will be re-added
+      inn.bench=(inn.bench||[]).filter(id=>id!==playerId);
+    } else {
+      clearFromField(playerId);
+    }
+    addToBench(playerId);
+    render();return;
+  }
+
+  // ── → SUBS ──
+  if(tType==='subs'){
+    if(sourceType==='field') inn.fieldSlots[sourceKey]=null;
+    if(sourceType==='bench') inn.bench=(inn.bench||[]).filter(id=>id!==playerId);
+    if(!subsPool.includes(playerId)) subsPool.push(playerId);
+    render();return;
+  }
+
+  // ── → OUT ──
+  if(tType==='out'){ markOut(playerId); }
+}
+
+// ══════════════════════════════════════════════════════════
+// OUT / RESTORE / REMOVE
+// ══════════════════════════════════════════════════════════
+function markOut(pid){
+  if(outPool.includes(pid))return;
+  outPool.push(pid);
+  innings.forEach(inn=>{
+    POSITIONS.forEach(pos=>{ if(inn.fieldSlots[pos]===pid) inn.fieldSlots[pos]=null; });
+    inn.bench=(inn.bench||[]).filter(id=>id!==pid);
+  });
+  subsPool=subsPool.filter(id=>id!==pid);
+  render();
+}
+
+function restorePlayer(pid){
+  outPool=outPool.filter(id=>id!==pid);
+  // Try to place in an open field slot in current inning
+  const inn=innings[currentInning];
+  const alreadyPlaced=POSITIONS.some(pos=>inn.fieldSlots[pos]===pid)||(inn.bench||[]).includes(pid);
+  if(!alreadyPlaced){
+    const openPos=POSITIONS.find(pos=>!inn.fieldSlots[pos]);
+    if(openPos){
+      inn.fieldSlots[openPos]=pid;
+    } else {
+      inn.bench=[...(inn.bench||[]),pid];
+    }
+  }
+  render();
+}
+
+function removeSub(pid){
+  subsPool=subsPool.filter(id=>id!==pid);
+  players=players.filter(p=>p.id!==pid);
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+// INNINGS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-add-inning').addEventListener('click',()=>{
+  const prev=innings[innings.length-1];
+  innings.push({
+    label:'Inn '+(innings.length+1),
+    fieldSlots:{...prev.fieldSlots},
+    bench:[...(prev.bench||[])]
+  });
+  currentInning=innings.length-1;
+  render();
+});
+
+// ══════════════════════════════════════════════════════════
+// ADD SUB
+// ══════════════════════════════════════════════════════════
+function doAddSub(){
+  const inp=document.getElementById('sub-add-input');
+  const name=inp.value.trim(); if(!name)return;
+  const id=newId();
+  players.push({id,name,isSub:true});
+  subsPool.push(id);
+  inp.value='';
+  render();
+}
+document.getElementById('btn-add-sub').addEventListener('click',doAddSub);
+document.getElementById('sub-add-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doAddSub(); });
+
+// ══════════════════════════════════════════════════════════
+// CLEAR FIELD
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-clear-field').addEventListener('click',()=>{
+  const inn=innings[currentInning];
+  POSITIONS.forEach(pos=>inn.fieldSlots[pos]=null);
+  inn.bench=[];
+  render();
+});
+
+// ══════════════════════════════════════════════════════════
+// EDIT ROSTER MODAL
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-edit-roster').addEventListener('click',()=>{
+  renderRosterModal(false);
+  document.getElementById('modal-roster').classList.remove('hidden');
+});
+document.getElementById('modal-roster-close').addEventListener('click',()=>{
+  document.getElementById('modal-roster').classList.add('hidden');
+  render();
+});
+
+function renderRosterModal(isFirst=false){
+  document.getElementById('modal-roster-title').textContent = isFirst ? 'Roster' : 'Edit Roster';
+  const closeBtn = document.getElementById('modal-roster-close');
+  closeBtn.textContent = isFirst ? "Let's Go!" : 'Done';
+  const list=document.getElementById('roster-list');
+  list.innerHTML='';
+  // only show core (non-sub) players
+  const core=players.filter(p=>!p.isSub);
+  core.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='roster-row';
+    const num=document.createElement('span');
+    num.className='roster-num'; num.textContent=i+1;
+    const inp=document.createElement('input');
+    inp.type='text'; inp.value=p.name;
+    inp.addEventListener('input',()=>{ p.name=inp.value; });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){
+      // move focus to next input
+      const inputs=list.querySelectorAll('input');
+      const idx=Array.from(inputs).indexOf(inp);
+      if(idx < inputs.length-1) inputs[idx+1].focus();
+      else inp.blur();
+    }});
+    // Select all text on click/focus so typing replaces the name immediately
+    inp.addEventListener('focus', ()=>{ inp.select(); });
+    inp.addEventListener('click', ()=>{ inp.select(); });
+    row.appendChild(num); row.appendChild(inp);
+    list.appendChild(row);
+  });
+  // Focus the first input
+  const first = list.querySelector('input');
+  if(first) setTimeout(()=>{ first.focus(); first.select(); }, 80);
+}
+
+// ══════════════════════════════════════════════════════════
+// PRESETS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-save-preset').addEventListener('click',()=>{
+  document.getElementById('preset-name-input').value='';
+  document.getElementById('modal-save').classList.remove('hidden');
+});
+document.getElementById('modal-save-cancel').addEventListener('click',()=>document.getElementById('modal-save').classList.add('hidden'));
+document.getElementById('modal-save-confirm').addEventListener('click',()=>{
+  const name=document.getElementById('preset-name-input').value.trim();
+  if(!name)return;
+  presets.push({
+    name,
+    players:players.map(p=>({...p})),
+    battingOrder:[...battingOrder],
+    innings:innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]})),
+    subsPool:[...subsPool],
+    outPool:[...outPool]
+  });
+  localStorage.setItem('slp_presets',JSON.stringify(presets));
+  document.getElementById('modal-save').classList.add('hidden');
+  renderPresetSelect();
+});
+document.getElementById('preset-name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('modal-save-confirm').click(); });
+
+document.getElementById('preset-select').addEventListener('change',e=>{
+  const idx=parseInt(e.target.value);
+  const updateBtn=document.getElementById('btn-update-preset');
+  if(isNaN(idx)){updateBtn.style.display='none';return;}
+  const pr=presets[idx]; if(!pr){updateBtn.style.display='none';return;}
+  players=[...pr.players.map(p=>({...p}))];
+  battingOrder=[...pr.battingOrder];
+  innings=pr.innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]}));
+  subsPool=[...pr.subsPool];
+  outPool=[...(pr.outPool||[])];
+  currentInning=0;
+  pidCounter=Math.max(0,...players.map(p=>parseInt(p.id.replace('p',''))||0))+1;
+  updateBtn.style.display='';
+  render();
+});
+
+document.getElementById('btn-update-preset').addEventListener('click',()=>{
+  const sel=document.getElementById('preset-select');
+  const idx=parseInt(sel.value);
+  if(isNaN(idx)||!presets[idx])return;
+  presets[idx]={
+    name:presets[idx].name,
+    players:players.map(p=>({...p})),
+    battingOrder:[...battingOrder],
+    innings:innings.map(inn=>({label:inn.label,fieldSlots:{...inn.fieldSlots},bench:[...(inn.bench||[])]})),
+    subsPool:[...subsPool],
+    outPool:[...outPool]
+  };
+  localStorage.setItem('slp_presets',JSON.stringify(presets));
+  // Flash the button to confirm
+  const btn=document.getElementById('btn-update-preset');
+  const orig=btn.textContent;
+  btn.textContent='Saved!';
+  btn.style.background='#3a8c3a';
+  setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; },1200);
+});
+
+document.getElementById('btn-manage-presets').addEventListener('click',()=>{
+  renderManageModal();
+  document.getElementById('modal-manage').classList.remove('hidden');
+});
+document.getElementById('modal-manage-close').addEventListener('click',()=>document.getElementById('modal-manage').classList.add('hidden'));
+
+function renderManageModal(){
+  const list=document.getElementById('preset-list');
+  list.innerHTML='';
+  if(!presets.length){
+    list.innerHTML='<p style="color:rgba(255,255,255,.4);font-size:.82rem">No presets saved yet.</p>';
+    return;
+  }
+  presets.forEach((pr,i)=>{
+    const row=document.createElement('div'); row.className='preset-item';
+    const nm=document.createElement('span'); nm.className='preset-item-name'; nm.textContent=pr.name;
+    const info=document.createElement('span'); info.className='preset-item-info';
+    info.textContent=`${pr.innings.length} inning${pr.innings.length!==1?'s':''}`;
+    const del=document.createElement('button'); del.className='btn btn-red btn-xs'; del.textContent='Delete';
+    del.addEventListener('click',()=>{
+      presets.splice(i,1);
+      localStorage.setItem('slp_presets',JSON.stringify(presets));
+      renderManageModal(); renderPresetSelect();
+    });
+    row.appendChild(nm); row.appendChild(info); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+render();
+
+// Open roster modal on very first load
+if(!localStorage.getItem('slp_roster_set')){
+  renderRosterModal(true);
+  document.getElementById('modal-roster').classList.remove('hidden');
+  // Mark as set when they close it
+  const origClose = document.getElementById('modal-roster-close').onclick;
+  document.getElementById('modal-roster-close').addEventListener('click', ()=>{
+    localStorage.setItem('slp_roster_set','1');
+  }, {once: true});
+}
+
+// ═══════════════════════════════════════════════════════════
+// GAME ENGINE
+// ═══════════════════════════════════════════════════════════
+const GAME_POSITIONS = ['P','C','1B','2B','3B','SS','LF','LCF','RCF','RF'];
+
+let game = null; // null = no game in progress
+
+function pgSelect(type, val, btn){
+  if(type==='side'){
+    document.querySelectorAll('.pregame-toggle .toggle-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  checkPgReady();
+}
+
+function checkPgReady(){
+  const sideActive = document.querySelector('.pregame-toggle .toggle-btn.active');
+  document.getElementById('pg-start-btn').disabled = !sideActive;
+}
+
+document.getElementById('btn-start-game').addEventListener('click',()=>{
+  document.getElementById('pregame-modal').classList.remove('hidden');
+  checkPgReady();
+});
+
+function launchGame(){
+  const sideBtn = document.querySelector('.pregame-toggle .toggle-btn.active');
+  if(!sideBtn) return;
+  const side = sideBtn.id === 'pg-home' ? 'home' : 'away';
+  const opponent = document.getElementById('pg-opponent').value.trim() || 'Opponent';
+  const totalInnings = parseInt(document.getElementById('pg-innings').value)||7;
+  const mercyOn = document.getElementById('pg-mercy-on').checked;
+  const extrasOn = document.getElementById('pg-extras-on').checked;
+  const mercyRuns = 0; const mercyAfter = 0; // replaced by tiered
+
+  // Build active batting order (non-out players)
+  const activeBatters = battingOrder.filter(id=>!outPool.includes(id));
+
+  game = {
+    side,           // 'home' or 'away'
+    opponent,
+    totalInnings,
+    mercy: mercyOn ? [
+      {runs:20, after:3},
+      {runs:15, after:4},
+      {runs:10, after:5}
+    ] : null,
+    extrasOn,
+    inning: 1,
+    halfInning: side==='away' ? 'top' : 'bottom', // top = we bat, bottom = we field
+    outs: 0,
+    ourScore: 0,
+    theirScore: 0,
+    bases: [false, false, false], // 1b,2b,3b
+    balls: 1,    // starts 1-1
+    strikes: 1,
+    batterIdx: 0,  // index into activeBatters
+    activeBatters,
+    // Stats per player id
+    stats: Object.fromEntries(activeBatters.map(id=>([id,{ab:0,h:0,b1:0,b2:0,b3:0,hr:0,bb:0,k:0,rbi:0,errors:0,po:0,a:0,errorTypes:{}}]))),
+    // Score by inning [us, them] per inning
+    inningScores: [],
+    currentInningUsRuns: 0,
+    currentInningThemRuns: 0,
+    log: [],
+    // error tracking
+    pendingResult: null,
+    pendingErrorFielder: null,
+    pendingErrorType: null,
+    selectedZone: null,
+    selectedZoneDefault: null,
+    gameOver: false,
+    throwState: null  // {zone, outcomePending}
+  };
+
+  document.getElementById('pregame-modal').classList.add('hidden');
+  document.getElementById('game-overlay').classList.remove('hidden');
+  updateGameUI();
+}
+
+function updateGameUI(){
+  if(!game) return;
+  const g = game;
+
+  // Title
+  const weAre = g.side==='away' ? 'Away' : 'Home';
+  document.getElementById('game-title').textContent = `${weAre} vs ${g.opponent}`;
+
+  // Score
+  document.getElementById('score-us').textContent = g.ourScore;
+  document.getElementById('score-them').textContent = g.theirScore;
+  document.getElementById('opp-score-display').textContent = g.theirScore;
+
+  // Score labels
+  const usBatting = g.halfInning==='top';
+  document.getElementById('score-us').className = 'score-num'+(usBatting?' active':'');
+  document.getElementById('score-them').className = 'score-num'+(!usBatting?' active':'');
+  document.getElementById('score-us-label').textContent = 'US';
+  document.getElementById('score-them-label').textContent = g.opponent.toUpperCase().substring(0,6);
+
+  // Inning
+  document.getElementById('inning-num').textContent = g.inning;
+  document.getElementById('inning-arrow').textContent = g.halfInning==='top' ? '▲' : '▼';
+
+  // Outs
+  for(let i=0;i<3;i++){
+    document.getElementById('out'+i).className='out-dot'+(i<g.outs?' filled':'');
+  }
+
+  // Count
+  updateCountUI();
+
+  // Batter
+  if(g.halfInning==='top'){
+    const pid = g.activeBatters[g.batterIdx % g.activeBatters.length];
+    const p = getPlayer(pid);
+    const orderNum = (g.batterIdx % g.activeBatters.length)+1;
+    document.getElementById('batter-order-num').textContent = '#'+orderNum;
+    document.getElementById('batter-name').textContent = p ? p.name : '—';
+    // mini stats
+    const st = g.stats[pid]||{};
+    const avg = st.ab>0 ? (st.h/st.ab).toFixed(3).replace('0.','.'): '.000';
+    document.getElementById('batter-stats-mini').innerHTML =
+      `<span class="stat-pill"><span>${st.ab}</span> AB</span>
+       <span class="stat-pill"><span>${st.h}</span> H</span>
+       <span class="stat-pill"><span>${avg}</span> AVG</span>
+       <span class="stat-pill"><span>${st.k}</span> K</span>`;
+
+    // On deck / in hole
+    const next1 = g.activeBatters[(g.batterIdx+1)%g.activeBatters.length];
+    const next2 = g.activeBatters[(g.batterIdx+2)%g.activeBatters.length];
+    document.getElementById('ondeck-name').textContent = getPlayer(next1)?.name||'—';
+    document.getElementById('inhole-name').textContent = getPlayer(next2)?.name||'—';
+  } else {
+    document.getElementById('batter-order-num').textContent = '';
+    document.getElementById('batter-name').textContent = 'We\'re Fielding';
+    document.getElementById('batter-stats-mini').innerHTML = '';
+    document.getElementById('ondeck-name').textContent = '—';
+    document.getElementById('inhole-name').textContent = '—';
+  }
+
+  // Bases
+  updateBasesUI();
+
+  // Stats table
+  renderStatsTable();
+  renderInningTable();
+  renderLog();
+}
+
+function updateCountUI(){
+  const g = game;
+  // Dots
+  const bdots = document.getElementById('ball-dots');
+  const sdots = document.getElementById('strike-dots');
+  bdots.innerHTML=''; sdots.innerHTML='';
+  for(let i=0;i<4;i++){
+    const d=document.createElement('div');
+    d.className='count-dot ball'+(i<g.balls?' filled':'');
+    bdots.appendChild(d);
+  }
+  for(let i=0;i<3;i++){
+    const d=document.createElement('div');
+    d.className='count-dot strike'+(i<g.strikes?' filled':'');
+    sdots.appendChild(d);
+  }
+  document.getElementById('count-display').textContent = g.balls+'-'+g.strikes;
+  // Foul warning
+  document.getElementById('foul-warning').className = 'foul-warning'+(g.strikes===2?' show':'');
+}
+
+function updateBasesUI(){
+  const g = game;
+  for(let i=1;i<=3;i++){
+    const el = document.getElementById('base-'+['','1b','2b','3b'][i]);
+    if(el) el.className = 'base-sq base-'+['','1b','2b','3b'][i]+(g.bases[i-1]?' occupied':'');
+  }
+}
+
+function toggleBase(n){
+  if(!game) return;
+  game.bases[n-1] = !game.bases[n-1];
+  updateBasesUI();
+}
+
+function advanceAllRunners(bases, batterPid=null){
+  if(!game) return;
+  let runs = 0;
+  const newBases = [false,false,false];
+  // Score runners that advance past 3rd (index 2 = 3rd base)
+  for(let i=2;i>=0;i--){
+    if(game.bases[i]){
+      const newPos = i + bases; // i=0 means 1st, adding bases
+      if(newPos >= 3){ runs++; }
+      else { newBases[newPos] = true; }
+    }
+  }
+  // Batter placed on base
+  const batterPos = bases - 1;
+  if(batterPos >= 3){ runs++; } // HR
+  else if(batterPos >= 0){ newBases[batterPos] = true; }
+
+  game.bases = newBases;
+  game.ourScore += runs;
+  game.currentInningUsRuns += runs;
+  // Credit RBI to batter
+  if(runs > 0 && batterPid && game.stats[batterPid]){
+    game.stats[batterPid].rbi += runs;
+  }
+  if(runs > 0) addLog(`${runs} run${runs!==1?'s':''} scored!`, 'run');
+  updateGameUI();
+  checkMercy();
+}
+
+function clearBases(){ if(game){game.bases=[false,false,false];updateBasesUI();} }
+
+function adjustOppScore(n){
+  if(!game) return;
+  game.theirScore = Math.max(0, game.theirScore+n);
+  game.currentInningThemRuns = Math.max(0, game.currentInningThemRuns+n);
+  document.getElementById('score-them').textContent = game.theirScore;
+  document.getElementById('opp-score-display').textContent = game.theirScore;
+  checkMercy();
+}
+
+// ── PITCH RECORDING ──
+function recordPitch(type){
+  if(!game||game.gameOver) return;
+  if(game.halfInning!=='top') return; // fielding half
+  const g = game;
+
+  if(type==='ball'){
+    g.balls++;
+    if(g.balls>=4){ recordWalk(); return; }
+    addLog('Ball '+g.balls, 'out');
+    updateCountUI();
+  } else if(type==='swinging'||type==='looking'){
+    g.strikes++;
+    addLog((type==='swinging'?'Swinging':'Called')+' strike', 'out');
+    if(g.strikes>=3){ recordStrikeout(type); return; }
+    updateCountUI();
+  } else if(type==='foul'){
+    if(g.strikes<2){
+      g.strikes++;
+      addLog('Foul ball', 'out');
+      updateCountUI();
+    } else {
+      // Strike 2 already — foul = out
+      addLog('Foul ball on 2 strikes — OUT', 'out');
+      recordOut('Foul on 2 strikes');
+    }
+  }
+}
+
+function recordWalk(){
+  const g = game;
+  const pid = g.activeBatters[g.batterIdx % g.activeBatters.length];
+  const p = getPlayer(pid);
+  g.stats[pid].bb++;
+  addLog((p?.name||'Batter')+' walks (BB)', 'walk');
+  advanceRunnersOnWalk(pid);
+  nextBatter();
+}
+
+function advanceRunnersOnWalk(batterPid){
+  const g = game;
+  let runs=0;
+  // Force runners: bases[0]=1st, bases[1]=2nd, bases[2]=3rd
+  if(g.bases[0]&&g.bases[1]&&g.bases[2]){ runs=1; g.bases[2]=true; }
+  else if(g.bases[0]&&g.bases[1]){ g.bases[2]=true; }
+  else if(g.bases[0]){ g.bases[1]=true; }
+  g.bases[0]=true;
+  g.ourScore+=runs;
+  g.currentInningUsRuns+=runs;
+  if(runs){
+    if(batterPid&&g.stats[batterPid]) g.stats[batterPid].rbi+=runs;
+    addLog(runs+' run scored on walk','run');
+  }
+  updateBasesUI();
+  checkMercy();
+}
+
+function recordStrikeout(type){
+  const g = game;
+  const pid = g.activeBatters[g.batterIdx % g.activeBatters.length];
+  const p = getPlayer(pid);
+  g.stats[pid].ab++;
+  g.stats[pid].k++;
+  addLog((p?.name||'Batter')+' K ('+(type==='swinging'?'Sw':'Lk')+')', 'out');
+  recordOut('Strikeout');
+}
+
+function recordOut(reason){
+  const g = game;
+  g.outs++;
+  // Reset count
+  g.balls=1; g.strikes=1;
+  // Clear result UI
+  hideResultUI();
+  if(g.outs>=3){ endHalfInning(); return; }
+  nextBatter();
+}
+
+function nextBatter(){
+  const g = game;
+  g.batterIdx++;
+  g.balls=1; g.strikes=1;
+  hideResultUI();
+  updateGameUI();
+}
+
+// ── IN PLAY MODAL ──
+function openInPlay(){
+  if(!game||game.halfInning!=='top') return;
+  document.getElementById('inplay-modal').classList.remove('hidden');
+  hideResultUI();
+}
+function closeInPlay(){
+  document.getElementById('inplay-modal').classList.add('hidden');
+  hideResultUI();
+}
+
+// ── HIT ZONE ──
+let selectedZone = null;
+let selectedZoneType = null;
+let throwState = null; // {zone, fielderPos}
+
+function selectHitZone(zone, defaultResult){
+  if(!game||game.halfInning!=='top') return;
+  selectedZone = zone;
+  selectedZoneType = defaultResult;
+
+  document.querySelectorAll('.hit-zone-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.hit-zone-btn').forEach(b=>{ if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+zone+"'")) b.classList.add('selected'); });
+
+  const confirm = document.getElementById('result-confirm');
+  const title   = document.getElementById('result-title');
+  const btns    = document.getElementById('result-btns');
+  confirm.classList.add('show');
+  title.textContent = zone+' — Choose result';
+  btns.innerHTML='';
+  document.getElementById('throw-panel').classList.add('hidden');
+  document.getElementById('error-modal').classList.remove('show');
+
+  const isOutfielder = ['LF','LCF','CF','RCF','RF'].includes(zone);
+  const isInfielder  = ['SS','2B','3B','1B','P','C'].includes(zone);
+  const isGap        = ['GAP-L','GAP-R','LINE-L','LINE-R'].includes(zone);
+  const isInfieldHit = zone==='INFIELD';
+
+  if(isOutfielder){
+    addResultBtn('Caught — Out', ()=>{ recordDefensivePO(zone); confirmInPlayResult('out',zone,'catch'); }, 'result-btn-out');
+    addResultBtn('Throw to base…', ()=>showThrowPanel(zone), 'result-btn-out');
+    addResultBtn('Single', ()=>confirmInPlayResult('1B',zone), 'result-btn-hit');
+    addResultBtn('Double', ()=>confirmInPlayResult('2B',zone), 'result-btn-hit');
+    addResultBtn('Triple', ()=>confirmInPlayResult('3B',zone), 'result-btn-hit');
+    addResultBtn('Error', ()=>showErrorPanel(zone), 'result-btn-error');
+  } else if(isInfielder){
+    addResultBtn('Out at 1st', ()=>{ recordDefensivePO(zone,'1B'); confirmInPlayResult('out',zone,'groundout'); }, 'result-btn-out');
+    addResultBtn('Force out…', ()=>showThrowPanel(zone), 'result-btn-out');
+    addResultBtn('Double Play', ()=>showThrowPanel(zone,true), 'result-btn-out');
+    addResultBtn('Single', ()=>confirmInPlayResult('1B',zone), 'result-btn-hit');
+    addResultBtn('Error', ()=>showErrorPanel(zone), 'result-btn-error');
+  } else if(isGap){
+    addResultBtn('Double', ()=>confirmInPlayResult('2B',zone), 'result-btn-hit');
+    addResultBtn('Triple', ()=>confirmInPlayResult('3B',zone), 'result-btn-hit');
+    addResultBtn('Single', ()=>confirmInPlayResult('1B',zone), 'result-btn-hit');
+    addResultBtn('Out', ()=>confirmInPlayResult('out',zone), 'result-btn-out');
+    addResultBtn('Error', ()=>showErrorPanel(zone), 'result-btn-error');
+  } else { // INFIELD HIT
+    addResultBtn('Single', ()=>confirmInPlayResult('1B',zone), 'result-btn-hit');
+    addResultBtn('Out', ()=>confirmInPlayResult('out',zone), 'result-btn-out');
+    addResultBtn('Error', ()=>showErrorPanel(zone), 'result-btn-error');
+  }
+}
+
+function addResultBtn(label, fn, cls){
+  const btn = document.createElement('button');
+  btn.className = 'result-btn '+cls;
+  btn.textContent = label;
+  btn.onclick = fn;
+  document.getElementById('result-btns').appendChild(btn);
+}
+
+let dpPending = false;
+let throwFromZone = null;
+
+function showThrowPanel(zone, isDP=false){
+  throwFromZone = zone;
+  dpPending = isDP;
+  document.getElementById('result-confirm').classList.remove('show');
+  const tp = document.getElementById('throw-panel');
+  tp.classList.remove('hidden');
+  const bb = document.getElementById('throw-base-btns');
+  bb.innerHTML='';
+  const bases = ['1st','2nd','3rd','Home'];
+  bases.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='error-type-btn'; btn.textContent=b;
+    btn.dataset.base=b;
+    btn.onclick=()=>{
+      document.querySelectorAll('#throw-base-btns .error-type-btn').forEach(x=>x.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    bb.appendChild(btn);
+  });
+  // Disable yes/no until base selected
+  document.getElementById('throw-out-yes').classList.remove('selected');
+  document.getElementById('throw-out-no').classList.remove('selected');
+}
+
+function resolveThrow(runnerOut){
+  const selectedBase = document.querySelector('#throw-base-btns .error-type-btn.selected');
+  if(!selectedBase) return;
+  const base = selectedBase.dataset.base;
+  const g = game;
+  const pid = g.activeBatters[g.batterIdx%g.activeBatters.length];
+  const p = getPlayer(pid);
+  const st = g.stats[pid]; st.ab++;
+
+  // Assist to the fielder who threw
+  recordDefensiveAssist(throwFromZone);
+
+  if(runnerOut){
+    // PO to fielder at receiving base
+    const posMap={'1st':'1B','2nd':'2B','3rd':'3B','Home':'C'};
+    recordDefensivePO(posMap[base]||base);
+    if(dpPending){
+      addLog((p?.name||'Batter')+' DP — '+throwFromZone+' → '+base, 'out');
+      g.outs += 2;
+      g.balls=1; g.strikes=1;
+      hideResultUI();
+      document.getElementById('inplay-modal').classList.add('hidden');
+      if(g.outs>=3){ endHalfInning(); return; }
+      nextBatter();
+    } else {
+      addLog((p?.name||'Batter')+' out — throw to '+base, 'out');
+      // Batter may be safe — if throw was to 2B/3B batter likely reached 1B
+      if(base!=='1st'){
+        // advance batter to 1B, remove runner who was out
+        g.bases[0]=true;
+        addLog((p?.name||'Batter')+' safe at 1st', 'hit');
+      }
+      document.getElementById('inplay-modal').classList.add('hidden');
+      recordOut('Force out at '+base);
+    }
+  } else {
+    // Runner safe — batter still gets credit for hit
+    addLog((p?.name||'Batter')+' — throw to '+base+', runner safe', 'hit');
+    st.h++; st.b1++;
+    document.getElementById('inplay-modal').classList.add('hidden');
+    advanceAllRunners(1, pid);
+    nextBatter();
+  }
+}
+
+// Defensive stat helpers
+function recordDefensivePO(pos, receivingPos){
+  const inn = innings[currentInning];
+  const p2 = receivingPos||pos;
+  const pid = inn.fieldSlots[p2];
+  if(pid&&game.stats[pid]) game.stats[pid].po++;
+}
+function recordDefensiveAssist(pos){
+  const inn = innings[currentInning];
+  const pid = inn.fieldSlots[pos];
+  if(pid&&game.stats[pid]) game.stats[pid].a++;
+}
+
+function confirmInPlayResult(result, zone, subtype){
+  const g = game;
+  const pid = g.activeBatters[g.batterIdx % g.activeBatters.length];
+  const p = getPlayer(pid);
+  const st = g.stats[pid];
+  st.ab++;
+
+  document.getElementById('inplay-modal').classList.add('hidden');
+  hideResultUI();
+
+  if(result==='out'){
+    // Credit PO to fielder
+    recordDefensivePO(zone);
+    if(subtype==='groundout') recordDefensiveAssist(zone);
+    addLog((p?.name||'Batter')+' out — '+zone, 'out');
+    recordOut('Fielded out at '+zone);
+  } else {
+    st.h++;
+    if(result==='1B') st.b1++;
+    if(result==='2B') st.b2++;
+    if(result==='3B') st.b3++;
+    if(result==='HR') st.hr++;
+    const bases = result==='1B'?1:result==='2B'?2:result==='3B'?3:4;
+    addLog((p?.name||'Batter')+' — '+result+' ('+zone+')', 'hit');
+    advanceAllRunners(bases, pid);
+    nextBatter();
+  }
+}
+
+// ── ERROR ──
+let errorFielder = null;
+let errorType = null;
+
+function showErrorPanel(zone){
+  document.getElementById('result-confirm').classList.remove('show');
+  document.getElementById('throw-panel').classList.add('hidden');
+  errorFielder = null; errorType = null;
+  document.getElementById('error-modal').classList.add('show');
+  const inn = innings[currentInning];
+  const fbtns = document.getElementById('error-fielder-btns');
+  fbtns.innerHTML='';
+  GAME_POSITIONS.forEach(pos=>{
+    const pid = inn.fieldSlots[pos];
+    const p = pid?getPlayer(pid):null;
+    const btn = document.createElement('button');
+    btn.className='error-type-btn';
+    btn.textContent = (p?p.name:pos)+' ('+pos+')';
+    btn.onclick=()=>{ selectErrorFielder(pid||pos, btn, p?p.name:pos, pos); };
+    fbtns.appendChild(btn);
+  });
+  document.getElementById('error-confirm-btn').disabled=true;
+  document.querySelectorAll('[id^="et-"]').forEach(b=>b.classList.remove('selected'));
+}
+
+function selectErrorFielder(pid, btn, name, pos){
+  errorFielder={pid,name,pos};
+  document.querySelectorAll('#error-fielder-btns .error-type-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  checkErrorReady();
+}
+
+function selectErrorType(type){
+  errorType=type;
+  document.querySelectorAll('[id^="et-"]').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('et-'+type)?.classList.add('selected');
+  checkErrorReady();
+}
+
+function checkErrorReady(){
+  document.getElementById('error-confirm-btn').disabled = !(errorFielder&&errorType);
+}
+
+function confirmError(){
+  if(!errorFielder||!errorType) return;
+  const g = game;
+  const pid = g.activeBatters[g.batterIdx%g.activeBatters.length];
+  const p = getPlayer(pid);
+  const st = g.stats[pid];
+  st.ab++;
+  // Track error on fielder
+  const fid = errorFielder.pid;
+  if(fid && g.stats[fid]){
+    g.stats[fid].errors++;
+    if(!g.stats[fid].errorTypes) g.stats[fid].errorTypes={};
+    g.stats[fid].errorTypes[errorType] = (g.stats[fid].errorTypes[errorType]||0)+1;
+  }
+  addLog((p?.name||'Batter')+' reaches on E ('+errorFielder.name+' — '+errorType+')', 'error');
+  document.getElementById('error-modal').classList.remove('show');
+  document.getElementById('inplay-modal').classList.add('hidden');
+  advanceAllRunners(1, pid);
+  nextBatter();
+}
+
+function hideResultUI(){
+  document.getElementById('result-confirm').classList.remove('show');
+  document.getElementById('error-modal').classList.remove('show');
+  const tp=document.getElementById('throw-panel');
+  if(tp) tp.classList.add('hidden');
+  document.querySelectorAll('.hit-zone-btn').forEach(b=>b.classList.remove('selected'));
+  selectedZone=null; selectedZoneType=null;
+  errorFielder=null; errorType=null;
+  throwFromZone=null; dpPending=false;
+}
+
+function recordResult(type, zone){
+  // reserved for future result types
+}
+
+// ── HALF INNING MANAGEMENT ──
+function endHalfInning(){
+  const g = game;
+  // Save inning scores
+  if(g.halfInning==='top'){
+    g.inningScores.push({us:g.currentInningUsRuns, them:0});
+    g.currentInningUsRuns=0;
+    g.halfInning='bottom';
+    g.outs=0;
+    g.balls=1; g.strikes=1;
+    g.bases=[false,false,false];
+    addLog('--- End Top '+g.inning+' ---','out');
+    updateGameUI();
+  } else {
+    // End of full inning
+    if(g.inningScores[g.inning-1]) g.inningScores[g.inning-1].them = g.currentInningThemRuns;
+    else g.inningScores.push({us:0,them:g.currentInningThemRuns});
+    g.currentInningThemRuns=0;
+    g.currentInningUsRuns=0;
+    addLog('--- End Inning '+g.inning+' ---','out');
+    g.inning++;
+    // Check game over
+    if(g.inning>g.totalInnings){
+      // Check for tie going to extras
+      if(g.ourScore===g.theirScore && g.extrasOn){
+        startExtrasInning();
+        return;
+      }
+      triggerGameOver();
+      return;
+    }
+    g.halfInning = g.side==='away'?'top':'bottom';
+    g.outs=0;
+    g.balls=1; g.strikes=1;
+    g.bases=[false,false,false];
+    updateGameUI();
+  }
+  checkMercy();
+}
+
+function manualThreeOuts(){
+  if(!game||game.gameOver) return;
+  game.outs=3;
+  endHalfInning();
+}
+
+function checkMercy(){
+  const g = game;
+  if(!g||!g.mercy||g.gameOver) return;
+  const diff = Math.abs(g.ourScore-g.theirScore);
+  for(const tier of g.mercy){
+    if(g.inning > tier.after && diff >= tier.runs){
+      triggerGameOver('Mercy Rule');
+      return;
+    }
+  }
+}
+
+function triggerGameOver(reason){
+  const g = game;
+  g.gameOver=true;
+  const isTie = g.ourScore===g.theirScore;
+  const winner = g.ourScore>g.theirScore?'We Win!':g.ourScore<g.theirScore?'They Win':'Tie Game';
+  const subtitle = reason?(' — '+reason):'';
+  document.getElementById('end-title').textContent = winner+subtitle;
+  document.getElementById('end-score').textContent = g.ourScore+' — '+g.theirScore;
+  document.getElementById('end-game-banner').classList.add('show');
+  addLog('=== GAME OVER'+subtitle+': '+g.ourScore+'-'+g.theirScore+' ===','run');
+  renderLog();
+  // Auto-push stats to sheet
+  pushStatsToSheet();
+}
+
+function endGame(){
+  if(!confirm('End the game?')) return;
+  triggerGameOver();
+}
+
+function returnToLineup(){
+  document.getElementById('game-overlay').classList.add('hidden');
+  game=null;
+}
+
+// ── LOG ──
+function addLog(msg, type){
+  if(!game) return;
+  game.log.push({msg, type, inning:game.inning, half:game.halfInning});
+}
+
+function renderLog(){
+  const el=document.getElementById('game-log');
+  el.innerHTML='';
+  let lastInning='';
+  game.log.forEach(e=>{
+    const key=e.inning+e.half;
+    if(key!==lastInning){
+      const h=document.createElement('div');
+      h.className='log-inning-header';
+      h.textContent='Inning '+e.inning+' '+(e.half==='top'?'▲ Top':'▼ Bottom');
+      el.appendChild(h);
+      lastInning=key;
+    }
+    const d=document.createElement('div');
+    d.className='log-entry log-'+e.type;
+    d.textContent=e.msg;
+    el.appendChild(d);
+  });
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── STATS TABLE ──
+function renderStatsTable(){
+  const tbody=document.getElementById('stats-tbody');
+  tbody.innerHTML='';
+  if(!game) return;
+  game.activeBatters.forEach(pid=>{
+    const p=getPlayer(pid); if(!p) return;
+    const st=game.stats[pid]||{};
+    const avg=st.ab>0?(st.h/st.ab).toFixed(3).replace('0.','.'):'.000';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${p.name}</td><td>${st.ab||0}</td><td>${st.h||0}</td>
+      <td>${st.b1||0}</td><td>${st.b2||0}</td><td>${st.b3||0}</td><td>${st.hr||0}</td>
+      <td>${st.bb||0}</td><td>${st.hbp||0}</td><td>${st.k||0}</td><td>${st.rbi||0}</td>
+      <td>${avg}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderInningTable(){
+  const thead=document.getElementById('inning-thead');
+  const tbody=document.getElementById('inning-tbody');
+  if(!game||!game.inningScores.length) return;
+  const n=game.inningScores.length;
+  let hRow='<tr><th>Team</th>';
+  for(let i=0;i<n;i++) hRow+=`<th>${i+1}</th>`;
+  hRow+='<th>R</th></tr>';
+  thead.innerHTML=hRow;
+  const usRow=document.createElement('tr');
+  const themRow=document.createElement('tr');
+  let usTotal=0,themTotal=0;
+  usRow.innerHTML=`<td>Us</td>`;
+  themRow.innerHTML=`<td>${game.opponent}</td>`;
+  game.inningScores.forEach(s=>{
+    usTotal+=s.us; themTotal+=s.them;
+    usRow.innerHTML+=`<td>${s.us}</td>`;
+    themRow.innerHTML+=`<td>${s.them}</td>`;
+  });
+  usRow.innerHTML+=`<td><b>${usTotal}</b></td>`;
+  themRow.innerHTML+=`<td><b>${themTotal}</b></td>`;
+  tbody.innerHTML='';
+  tbody.appendChild(usRow);
+  tbody.appendChild(themRow);
+}
+
+function showGamePage(page, btn){
+  document.querySelectorAll('.game-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.game-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(page==='stats'){ renderStatsTable(); renderInningTable(); }
+  if(page==='log') renderLog();
+}
+
+
+
+// ═══════════════════════════════════════════════════════════
+// DRAG BALL FROM MOUND
+// ═══════════════════════════════════════════════════════════
+let ballDragging = false;
+let ballGhost = null;
+let ballMX = 0, ballMY = 0;
+
+function initDragBall(){
+  const ball = document.getElementById('drag-ball');
+  if(!ball) return;
+
+  function startBallDrag(clientX, clientY){
+    ballDragging = true;
+    ballGhost = document.createElement('div');
+    ballGhost.className = 'drag-ball-ghost';
+    ballGhost.textContent = '⚾';
+    ballGhost.style.fontSize = '14px';
+    ballGhost.style.display = 'flex';
+    ballGhost.style.alignItems = 'center';
+    ballGhost.style.justifyContent = 'center';
+    document.body.appendChild(ballGhost);
+    moveBallGhost(clientX, clientY);
+  }
+
+  function moveBallGhost(clientX, clientY){
+    if(!ballGhost) return;
+    ballGhost.style.left = (clientX - 14) + 'px';
+    ballGhost.style.top  = (clientY - 14) + 'px';
+    // Highlight zone under cursor
+    document.querySelectorAll('.hit-zone-btn').forEach(b=>{
+      b.classList.remove('drag-hover','drag-hover-out');
+    });
+    document.getElementById('hr-zone')?.classList.remove('drag-hover-hr');
+    const el = document.elementFromPoint(clientX, clientY);
+    if(el){
+      const zBtn = el.closest('[data-zone]');
+      if(zBtn){
+        const t = zBtn.dataset.type;
+        zBtn.classList.add(t==='out'?'drag-hover-out':'drag-hover');
+      }
+      const hrZone = el.closest('#hr-zone');
+      if(hrZone) hrZone.classList.add('drag-hover-hr');
+    }
+  }
+
+  function endBallDrag(clientX, clientY){
+    if(!ballDragging) return;
+    ballDragging = false;
+    if(ballGhost){ ballGhost.remove(); ballGhost=null; }
+    document.querySelectorAll('.hit-zone-btn').forEach(b=>{
+      b.classList.remove('drag-hover','drag-hover-out');
+    });
+    document.getElementById('hr-zone')?.classList.remove('drag-hover-hr');
+
+    // Find what's under the drop point
+    const el = document.elementFromPoint(clientX, clientY);
+    if(!el) return;
+
+    // Check HR zone first
+    if(el.closest('#hr-zone')){ selectHitZone('HR','HR'); return; }
+
+    // Check hit zone
+    const zBtn = el.closest('[data-zone]');
+    if(zBtn) selectHitZone(zBtn.dataset.zone, zBtn.dataset.type);
+  }
+
+  // Mouse events
+  ball.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    startBallDrag(e.clientX, e.clientY);
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!ballDragging) return;
+    moveBallGhost(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', e=>{
+    if(!ballDragging) return;
+    endBallDrag(e.clientX, e.clientY);
+  });
+
+  // Touch events
+  ball.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    const t = e.touches[0];
+    startBallDrag(t.clientX, t.clientY);
+  },{passive:false});
+  document.addEventListener('touchmove', e=>{
+    if(!ballDragging) return;
+    const t = e.touches[0];
+    moveBallGhost(t.clientX, t.clientY);
+  },{passive:false});
+  document.addEventListener('touchend', e=>{
+    if(!ballDragging) return;
+    const t = e.changedTouches[0];
+    endBallDrag(t.clientX, t.clientY);
+  });
+}
+
+// Re-init drag ball whenever in-play modal opens
+const _origOpenInPlay = openInPlay;
+openInPlay = function(){
+  _origOpenInPlay();
+  setTimeout(initDragBall, 50);
+};
+
+// Handle HR zone in selectHitZone
+const _origSelectHitZone = selectHitZone;
+selectHitZone = function(zone, defaultResult){
+  if(zone === 'HR'){
+    if(!game||game.halfInning!=='top') return;
+    document.querySelectorAll('.hit-zone-btn').forEach(b=>b.classList.remove('selected'));
+    document.getElementById('result-confirm').classList.add('show');
+    document.getElementById('result-title').textContent = 'HOME RUN!';
+    document.getElementById('result-btns').innerHTML='';
+    document.getElementById('throw-panel').classList.add('hidden');
+    document.getElementById('error-modal').classList.remove('show');
+    addResultBtn('Home Run ⚾', ()=>{
+      const g=game;
+      const pid=g.activeBatters[g.batterIdx%g.activeBatters.length];
+      const p=getPlayer(pid);
+      const st=g.stats[pid];
+      st.ab++; st.h++; st.hr++;
+      document.getElementById('inplay-modal').classList.add('hidden');
+      hideResultUI();
+      addLog((p?.name||'Batter')+' — HOME RUN! ⚾','hit');
+      advanceAllRunners(4, pid);
+      nextBatter();
+    }, 'result-btn-hit');
+    return;
+  }
+  _origSelectHitZone(zone, defaultResult);
+};
+
+// ═══════════════════════════════════════════════════════════
+// EXTRAS INNINGS
+// ═══════════════════════════════════════════════════════════
+function startExtrasInning(){
+  const g = game;
+  addLog('--- Extra Innings: Inning '+g.inning+' ---','run');
+  // Show extras banner
+  let eb = document.getElementById('extras-banner');
+  if(!eb){
+    eb = document.createElement('div');
+    eb.id='extras-banner'; eb.className='extras-banner show';
+    eb.innerHTML='<div class="extras-title">Extra Innings</div><div style="color:rgba(255,255,255,.6);font-size:.8rem">Runner starts on 2nd · 1 out · Last batter of previous inning</div>';
+    document.getElementById('page-atbat').insertBefore(eb, document.getElementById('page-atbat').firstChild);
+  } else {
+    eb.classList.add('show');
+  }
+  g.halfInning = g.side==='away'?'top':'bottom';
+  g.outs = 1; // starts with 1 out
+  g.bases = [false, true, false]; // runner on 2nd
+  g.balls=1; g.strikes=1;
+  updateGameUI();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIME LIMIT TIE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('end-game').addEventListener?.('click', ()=>{}); // already handled
+// Add tie game button to end game flow
+const _origEndGame = endGame;
+endGame = function(){
+  if(!game) return;
+  const choice = confirm('End game?\n\nOK = End now (may result in tie)\nCancel = Keep playing');
+  if(choice) triggerGameOver('Time Limit');
+};
+
+// ═══════════════════════════════════════════════════════════
+// GOOGLE SHEET SYNC
+// ═══════════════════════════════════════════════════════════
+(function(){
+  const input = document.getElementById('sheet-url-input');
+  const status = document.getElementById('sync-status');
+  const saveBtn = document.getElementById('btn-save-sheet-url');
+
+  // Load saved URL
+  const saved = localStorage.getItem('slp_sheet_url');
+  if(saved){ input.value=saved; status.textContent='✓ Configured'; status.style.color='rgba(100,255,100,.8)'; }
+
+  saveBtn.addEventListener('click',()=>{
+    const url = input.value.trim();
+    if(!url){ localStorage.removeItem('slp_sheet_url'); status.textContent='Cleared'; return; }
+    localStorage.setItem('slp_sheet_url', url);
+    status.textContent='Verifying…';
+    fetch(url, {method:'GET', mode:'no-cors'})
+      .then(()=>{ status.textContent='✓ Configured'; status.style.color='rgba(100,255,100,.8)'; })
+      .catch(()=>{ status.textContent='✓ Saved (CORS expected)'; status.style.color='rgba(100,255,100,.8)'; });
+  });
+
+  // ── Push presets to sheet ──
+  document.getElementById('btn-push-presets').addEventListener('click', async ()=>{
+    const url = localStorage.getItem('slp_sheet_url');
+    if(!url){ alert('Set your Sheet URL first.'); return; }
+    const presets = JSON.parse(localStorage.getItem('slp_presets')||'[]');
+    if(!presets.length){ alert('No presets saved yet.'); return; }
+    status.textContent = '⟳ Pushing…';
+    try {
+      await fetch(url, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ type:'preset_push', presets })
+      });
+      status.textContent = '✓ Presets pushed '+new Date().toLocaleTimeString();
+      status.style.color = 'rgba(100,255,100,.9)';
+    } catch(err) {
+      status.textContent = '⚠ Push failed';
+      status.style.color = 'rgba(255,150,80,.9)';
+    }
+  });
+
+  // ── Pull presets from sheet ──
+  document.getElementById('btn-pull-presets').addEventListener('click', async ()=>{
+    const url = localStorage.getItem('slp_sheet_url');
+    if(!url){ alert('Set your Sheet URL first.'); return; }
+    status.textContent = '⟳ Pulling…';
+    try {
+      // GET with action=get_presets — Apps Script returns JSON
+      const res = await fetch(url + '?action=get_presets', { method:'GET' });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error||'Unknown error');
+      const incoming = data.presets || [];
+      if(!incoming.length){ status.textContent = 'No presets on sheet'; return; }
+      // Merge: add any preset whose name doesn't already exist locally
+      const local = JSON.parse(localStorage.getItem('slp_presets')||'[]');
+      let added = 0;
+      incoming.forEach(pr=>{
+        if(!local.find(p=>p.name===pr.name)){ local.push(pr); added++; }
+      });
+      localStorage.setItem('slp_presets', JSON.stringify(local));
+      renderPresetSelect();
+      status.textContent = added>0 ? '✓ Pulled '+added+' preset'+(added!==1?'s':'')+' '+new Date().toLocaleTimeString() : '✓ Already up to date';
+      status.style.color = 'rgba(100,255,100,.9)';
+    } catch(err) {
+      // no-cors fallback: can't read response body, so just inform user
+      status.textContent = '⚠ Pull needs Script URL (not no-cors)';
+      status.style.color = 'rgba(255,200,80,.9)';
+      console.error(err);
+    }
+  });
+})();
+
+async function pushStatsToSheet(){
+  const url = localStorage.getItem('slp_sheet_url');
+  if(!url||!game) return;
+
+  const inn = innings[currentInning];
+  const battingStats = game.activeBatters.map(pid=>{
+    const p=getPlayer(pid); if(!p) return null;
+    const st=game.stats[pid]||{};
+    return {name:p.name,ab:st.ab,h:st.h,b1:st.b1,b2:st.b2,b3:st.b3,hr:st.hr,bb:st.bb,k:st.k,rbi:st.rbi};
+  }).filter(Boolean);
+
+  const defenseStats = game.activeBatters.map(pid=>{
+    const p=getPlayer(pid); if(!p) return null;
+    const st=game.stats[pid]||{};
+    if(!st.po&&!st.a&&!st.errors) return null;
+    let pos='—';
+    POSITIONS.forEach(pp=>{ if(inn.fieldSlots[pp]===pid) pos=pp; });
+    const et=st.errorTypes||{};
+    const etStr=Object.entries(et).map(([k,v])=>k+(v>1?'×'+v:'')).join(', ')||'—';
+    return {name:p.name,pos,po:st.po,a:st.a,errors:st.errors,errorTypes:etStr};
+  }).filter(Boolean);
+
+  const payload = {
+    type:'game_stats',
+    date: new Date().toLocaleDateString(),
+    opponent: game.opponent,
+    ourScore: game.ourScore,
+    theirScore: game.theirScore,
+    innings: game.inning,
+    battingStats,
+    defenseStats,
+    log: game.log
+  };
+
+  try {
+    const syncStatus = document.getElementById('sync-status');
+    syncStatus.textContent = '⟳ Syncing…';
+    await fetch(url, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    syncStatus.textContent = '✓ Synced '+new Date().toLocaleTimeString();
+    syncStatus.style.color = 'rgba(100,255,100,.9)';
+  } catch(err) {
+    console.error('Sheet sync failed:', err);
+    document.getElementById('sync-status').textContent = '⚠ Sync failed';
+    document.getElementById('sync-status').style.color = 'rgba(255,150,80,.9)';
+  }
+}
+
+</script>
+</body>
+</html>
